@@ -1,0 +1,61 @@
+{
+  "entities": {
+    "Meeting": {
+      "title": "Meeting",
+      "description": "A meeting transcript and its associated metadata.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The title of the meeting." },
+        "date": { "type": "string", "format": "date-time", "description": "When the meeting occurred." },
+        "wordCount": { "type": "integer", "description": "Total word count of the transcript." },
+        "speakers": { "type": "array", "items": { "type": "string" }, "description": "List of detected speakers." },
+        "summary": { "type": "string", "description": "AI-generated executive summary." },
+        "transcriptContent": { "type": "string", "description": "The full transcript text." },
+        "sentimentData": { "type": "object", "description": "Sentiment analysis results." },
+        "status": { "type": "string", "enum": ["processing", "processed", "error"], "description": "Current processing status." },
+        "authorId": { "type": "string", "description": "UID of the user who uploaded the meeting." }
+      },
+      "required": ["title", "date", "authorId", "status"]
+    },
+    "Decision": {
+      "title": "Decision",
+      "description": "A key decision made during a meeting.",
+      "type": "object",
+      "properties": {
+        "meetingId": { "type": "string", "description": "Reference to the meeting." },
+        "text": { "type": "string", "description": "The decision text." },
+        "category": { "type": "string", "description": "Category of the decision (e.g., Product, Market)." },
+        "authorId": { "type": "string", "description": "UID of the user." }
+      },
+      "required": ["meetingId", "text", "authorId"]
+    },
+    "ActionItem": {
+      "title": "ActionItem",
+      "description": "A task assigned to a specific person during a meeting.",
+      "type": "object",
+      "properties": {
+        "meetingId": { "type": "string", "description": "Reference to the meeting." },
+        "responsible": { "type": "string", "description": "Who is responsible for the task." },
+        "task": { "type": "string", "description": "What needs to be done." },
+        "dueDate": { "type": "string", "format": "date-time", "description": "By when it should be completed." },
+        "status": { "type": "string", "enum": ["pending", "completed"], "description": "Current status of the task." },
+        "authorId": { "type": "string", "description": "UID of the user." }
+      },
+      "required": ["meetingId", "responsible", "task", "authorId", "status"]
+    }
+  },
+  "firestore": {
+    "/meetings/{meetingId}": {
+      "schema": "Meeting",
+      "description": "Collection of meeting transcripts."
+    },
+    "/decisions/{decisionId}": {
+      "schema": "Decision",
+      "description": "Collection of decisions extracted from meetings."
+    },
+    "/actionItems/{actionItemId}": {
+      "schema": "ActionItem",
+      "description": "Collection of action items extracted from meetings."
+    }
+  }
+}
