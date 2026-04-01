@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogIn, BrainCircuit, FileText, Bot, Activity, Search } from 'lucide-react';
+import { LogIn, BrainCircuit, FileText, Activity, Search, Network, CheckSquare, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface LandingProps {
@@ -35,13 +35,13 @@ export const Landing: React.FC<LandingProps> = ({ onLogin }) => {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase tracking-widest shadow-sm"
           >
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            The Editorial Intelligence Hub
+            v2.0 • Powered by LangGraph Swarm Architecture
           </motion.div>
           
           <motion.h1 
@@ -59,19 +59,25 @@ export const Landing: React.FC<LandingProps> = ({ onLogin }) => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-xl text-on-surface-variant font-body leading-relaxed max-w-2xl"
           >
-            Hours of meetings shouldn't create hours of reading. Turn massive 20-page transcripts into actionable intelligence, instant decisions, and extracted strategy instantly.
+            Hours of meetings shouldn't create hours of reading. Turn massive 20-page transcripts into actionable intelligence, instant decisions, and extracted strategy instantly using our decoupled AI workforce.
           </motion.p>
           
-          <motion.button 
+          <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            onClick={onLogin}
-            className="px-8 py-5 bg-gradient-to-br from-primary to-primary-container text-white rounded-2xl font-bold text-lg shadow-xl shadow-primary/30 hover:shadow-2xl hover:-translate-y-1 active:scale-95 transition-all flex items-center gap-3"
           >
-            <LogIn className="w-6 h-6" />
-            Sign in with Google to Start
-          </motion.button>
+            <button 
+              onClick={onLogin}
+              className="px-8 py-5 bg-gradient-to-br from-primary to-primary-container text-white rounded-2xl font-bold text-lg shadow-xl shadow-primary/30 hover:shadow-2xl hover:-translate-y-1 active:scale-95 transition-all flex items-center gap-3"
+            >
+              <LogIn className="w-6 h-6" />
+              Sign in with Google to Start
+            </button>
+            <div className="mt-4 flex items-center justify-center gap-2 text-xs font-bold text-on-surface-variant tracking-widest uppercase opacity-60">
+              <ShieldCheck className="w-4 h-4" /> Built with Row-Level Security
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -82,34 +88,46 @@ export const Landing: React.FC<LandingProps> = ({ onLogin }) => {
         
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-16 space-y-4">
-            <h2 className="text-4xl font-black text-primary font-headline tracking-tight">Everything You Need.</h2>
-            <p className="text-on-surface-variant max-w-xl mx-auto">Upload any transcript format and let our purpose-built AI pipeline surface exactly what matters.</p>
+            <h2 className="text-4xl font-black text-primary font-headline tracking-tight">An Autonomous Workforce.</h2>
+            <p className="text-on-surface-variant max-w-xl mx-auto">Upload any transcript format and let our purpose-built AI pipeline surface exactly what matters using asynchronous Agent Swarms.</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <FeatureCard 
-              icon={<FileText />}
-              title="Multi-Transcript Ingestion"
-              desc="Drag and drop or batch upload WebVTT and plain text meeting records seamlessly into organized project groups."
+              icon={<Network />}
+              title="Multi-Agent Orchestration"
+              desc="Transcripts aren't analyzed by one model. They are delegated to an Analyst, an EQ Specialist, and an Executive agent running in parallel to extract hyper-accurate metadata."
               delay={0.1}
             />
             <FeatureCard 
-              icon={<Activity />}
-              title="Action Item Extractor"
-              desc="Automatically detect decisions and action items assigning who is responsible, what they need to do, and by when."
+              icon={<CheckSquare />}
+              title="The Master Workstream"
+              desc="Action Items aren't just listed; they are centralized. The Workstream globally tracks every actionable task across all your meetings with interactive checkboxes and CSV exports."
               delay={0.2}
             />
             <FeatureCard 
               icon={<Search />}
-              title="Contextual Query Engine"
-              desc="Ask a question across dozens of meetings. Our AI reasons through the transcripts and provides a summarized answer with exact citations."
+              title="Global Inquiry Chat"
+              desc="Ask a question across dozens of meetings simultaneously. The backend AI reasons through your knowledge base and cites its sources using exact verbatim string extraction."
               delay={0.3}
             />
             <FeatureCard 
-              icon={<Bot />}
-              title="Speaker Sentiment Analysis"
-              desc="Visualize the 'vibe' of every meeting. Spot conflict, alignment, and hesitation at a glance with per-speaker emotional tracking."
+              icon={<Activity />}
+              title="Timeline Sentiment Mapping"
+              desc="Visualize the 'vibe' of every meeting. Our EQ Agent spots conflict, alignment, and neutrality on a timeline basis, automatically scraping the names of the speakers involved."
               delay={0.4}
+            />
+             <FeatureCard 
+              icon={<FileText />}
+              title="Executive Reporting"
+              desc="Generate instant Markdown executive reports directly from the dashboard showcasing organizational tasks, average sentiment scores, and 3-sentence summary synthesis."
+              delay={0.5}
+            />
+            <FeatureCard 
+              icon={<ShieldCheck />}
+              title="Decoupled & Secure"
+              desc="Your data is safe. Complex AI processing is strictly offloaded to our Python FastAPI server enforcing strict Firebase Bearer ID cryptographic token validation."
+              delay={0.6}
             />
           </div>
         </div>
@@ -138,7 +156,7 @@ const FeatureCard = ({ icon, title, desc, delay }: { icon: React.ReactNode, titl
     whileInView={{ y: 0, opacity: 1 }}
     viewport={{ once: true, margin: "-100px" }}
     transition={{ duration: 0.5, delay }}
-    className="bg-white p-10 rounded-3xl shadow-sm border border-outline-variant/10 hover:shadow-xl hover:border-primary/20 transition-all group"
+    className="bg-white p-10 rounded-3xl shadow-sm border border-outline-variant/10 hover:shadow-xl hover:border-primary/20 transition-all group h-full flex flex-col"
   >
     <div className="w-14 h-14 rounded-2xl bg-surface-container flex items-center justify-center text-primary mb-6 group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all duration-300">
       {React.cloneElement(icon as React.ReactElement, { className: "w-7 h-7" })}
