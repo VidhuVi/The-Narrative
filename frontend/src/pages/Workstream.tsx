@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../core/firebase';
 import { collection, query, where, onSnapshot, updateDoc, doc, orderBy } from 'firebase/firestore';
-import { CheckSquare, Circle, CheckCircle2, Gavel, Calendar, FileText, Filter } from 'lucide-react';
+import { CheckSquare, Circle, CheckCircle2, Gavel, Calendar, FileText, Filter, Download } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ActionItem, Decision, MeetingRef } from '../types';
 
@@ -52,6 +52,29 @@ export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ ini
 
   const pendingCount = filteredActions.filter(a => a.status === 'pending').length;
 
+  const exportCSV = () => {
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Type,Meeting Outline,Category/Assignee,Text/Task,Due Date,Status\n";
+    
+    filteredDecisions.forEach(d => {
+      const meetingTitle = meetings.find(m => m.id === d.meetingId)?.title || "Unknown Meeting";
+      csvContent += `Decision,"${meetingTitle}","${d.category}","${d.text.replace(/"/g, '""')}",,\n`;
+    });
+    
+    filteredActions.forEach(a => {
+      const meetingTitle = meetings.find(m => m.id === a.meetingId)?.title || "Unknown Meeting";
+      csvContent += `Action Item,"${meetingTitle}","${a.responsible}","${a.task.replace(/"/g, '""')}","${a.dueDate || ''}","${a.status}"\n`;
+    });
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `workstream_export_${filterId === 'all' ? 'global' : filterId}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-20">
       
@@ -65,7 +88,14 @@ export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ ini
         </div>
         
         <div className="flex items-center gap-3">
-          <Filter className="w-5 h-5 text-on-surface-variant" />
+          <button 
+            onClick={exportCSV}
+            className="flex items-center gap-2 px-4 py-3 bg-secondary-container text-on-secondary-container hover:bg-secondary hover:text-white transition-colors rounded-lg font-bold text-sm"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+          <Filter className="w-5 h-5 text-on-surface-variant ml-2" />
           <select 
             value={filterId} 
             onChange={(e) => setFilterId(e.target.value)}

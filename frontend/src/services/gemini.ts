@@ -94,8 +94,11 @@ export const geminiService = {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `You are an AI assistant for "The Narrative", an editorial intelligence hub. 
-      Answer the user's question based on the following meeting transcripts. 
-      Cite your sources clearly (e.g., "According to the [Meeting Title]...").
+      Answer the user's question explicitly based on the following meeting transcripts. 
+      
+      CRITICAL INSTRUCTION: You must ALWAYS cite your sources using exact verbatim quotes from the part of the transcript your answer came from.
+      Format citations cleanly, for example:
+      "According to the [Meeting Title]: > 'insert exact transcript quote here'"
       
       Context:
       ${context}
