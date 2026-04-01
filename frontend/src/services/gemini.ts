@@ -92,7 +92,7 @@ export const geminiService = {
   async chatWithTranscripts(query: string, transcripts: { title: string; content: string }[]): Promise<string> {
     const context = transcripts.map(t => `Meeting: ${t.title}\nContent: ${t.content}`).join("\n\n---\n\n");
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.1-flash-lite-preview",
       contents: `You are an AI assistant for "The Narrative", an editorial intelligence hub. 
       Answer the user's question explicitly based on the following meeting transcripts. 
       

@@ -4,6 +4,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { geminiService } from '../services/gemini';
 import { MessageSquare, Send, Paperclip, BrainCircuit, Plus, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import ReactMarkdown from 'react-markdown';
 import { Meeting } from '../types';
 export const Chat: React.FC = () => {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -93,8 +94,12 @@ export const Chat: React.FC = () => {
                   <span className="text-xs font-bold text-primary uppercase tracking-tighter">Narrative AI Intelligence</span>
                 </div>
               )}
-              <div className={`p-4 rounded-xl shadow-sm ${msg.role === 'user' ? 'bg-primary text-white rounded-tr-none' : 'bg-white text-on-surface rounded-tl-none'}`}>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+              <div className={`p-5 rounded-2xl shadow-sm ${msg.role === 'user' ? 'bg-primary text-white rounded-tr-none' : 'bg-white text-on-surface rounded-tl-none prose prose-sm md:prose-base prose-slate max-w-none prose-headings:font-headline prose-headings:text-primary prose-a:text-blue-600'}`}>
+                {msg.role === 'user' ? (
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap font-medium">{msg.text}</p>
+                ) : (
+                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+                )}
               </div>
             </div>
           ))}
