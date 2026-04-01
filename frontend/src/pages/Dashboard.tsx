@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { db, auth } from '../core/firebase';
 import { collection, query, where, onSnapshot, orderBy, limit, deleteDoc, doc } from 'firebase/firestore';
-import { LayoutDashboard, CheckSquare, TrendingUp, ChevronRight, Video, Mic, FileText, Trash2 } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, TrendingUp, ChevronRight, Video, Mic, FileText, Trash2, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'motion/react';
 import { Meeting } from '../types';
@@ -10,6 +10,41 @@ export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploa
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [pendingActions, setPendingActions] = useState<any[]>([]);
   const [stats, setStats] = useState({ total: 0, pending: 0, sentiment: 0 });
+
+  const handleDownloadReport = () => {
+    let mdContent = `# The Narrative: Executive Summary Report\n\n`;
+    mdContent += `**Generated:** ${format(new Date(), 'PPP p')}\n\n`;
+    
+    mdContent += `## 📊 Global Ecosystem Statistics\n`;
+    mdContent += `- **Total Meetings Processed:** ${stats.total}\n`;
+    mdContent += `- **Organizational Pending Actions:** ${stats.pending}\n`;
+    mdContent += `- **Average Global Sentiment Alignment:** ${stats.sentiment}%\n\n`;
+    
+    mdContent += `## 📝 Recent Meeting Diagnostics\n`;
+    meetings.forEach(m => {
+      mdContent += `### ${m.title}\n`;
+      mdContent += `- **Date:** ${m.date?.toDate ? format(m.date.toDate(), 'PPP') : 'N/A'}\n`;
+      mdContent += `- **Sentiment Score:** ${m.sentimentData?.overall || 'N/A'}%\n`;
+      mdContent += `- **Executive Synthesis:** ${m.summary}\n\n`;
+    });
+
+    mdContent += `## ⚠️ Action Items Requiring Attention\n`;
+    if (pendingActions.length === 0) {
+      mdContent += `*Zero pending action items. Team is perfectly aligned.*\n`;
+    } else {
+      pendingActions.forEach(a => {
+        mdContent += `- [ ] **${a.task}** (Assignee: ${a.responsible}, Due: ${a.dueDate || 'ASAP'})\n`;
+      });
+    }
+
+    const blob = new Blob([mdContent], { type: "text/markdown;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", `Narrative_Report_${format(new Date(), 'yyyy_MM_dd')}.md`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleDeleteMeeting = async (e: React.MouseEvent, meetingId: string) => {
     e.stopPropagation();
@@ -73,8 +108,12 @@ export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploa
           <p className="text-on-surface-variant font-body max-w-md">Your narrative ecosystem has processed {meetings.length} new discussions. Key themes focus on "Q4 Strategy" and "Technical Debt".</p>
         </div>
         <div className="flex gap-3">
-          <button className="px-6 py-3 bg-surface-container-high text-on-surface rounded-lg font-bold text-sm transition-all hover:bg-surface-container-highest active:scale-95">
-            Download Report
+          <button 
+            onClick={handleDownloadReport}
+            className="px-6 py-3 bg-white border border-outline-variant/30 text-on-surface-variant rounded-lg font-bold text-sm transition-all hover:border-primary hover:text-primary hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center gap-2 group"
+          >
+            <Download className="w-4 h-4 group-hover:block transition-transform" />
+            Download Summary Report
           </button>
           <button onClick={onUploadClick} className="px-6 py-3 bg-gradient-to-br from-primary to-primary-container text-white rounded-lg font-bold text-sm shadow-md hover:opacity-90 active:scale-95 flex items-center gap-2">
             Upload New Meeting
