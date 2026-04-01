@@ -6,3 +6,9 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Python Backend & Secrets
+backend/venv/
+backend/__pycache__/
+backend/firebase-admin-key.json
+backend/.env

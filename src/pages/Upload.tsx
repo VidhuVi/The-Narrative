@@ -3,7 +3,6 @@ import { useDropzone } from 'react-dropzone';
 import { CloudUpload, FileText, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { db, auth } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { geminiService } from '../services/gemini';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const Upload: React.FC = () => {
@@ -38,51 +37,48 @@ export const Upload: React.FC = () => {
         const text = await file.text();
         setProgress(30);
 
-        // Extract intelligence using Gemini
-        const data = await geminiService.extractIntelligence(text);
-        setProgress(70);
-
-        // Save to Firestore
+        // 1. Create initial placeholder in Firestore
         const meetingRef = await addDoc(collection(db, 'meetings'), {
-          title: data.title,
+          title: file.name.replace(/\.[^/.]+$/, ""), // Use filename as title
           date: serverTimestamp(),
           wordCount: text.split(/\s+/).length,
-          speakers: data.speakers,
-          summary: data.summary,
+          speakers: [], // Agents will analyze transcript naturally
+          summary: "Agents are actively analyzing this transcript. Please wait...",
           transcriptContent: text,
-          sentimentData: data.sentiment,
-          status: 'processed',
+          sentimentData: null,
+          status: 'processing',
           authorId: auth.currentUser.uid
         });
 
-        // Save decisions
-        for (const decision of data.decisions) {
-          await addDoc(collection(db, 'decisions'), {
-            meetingId: meetingRef.id,
-            text: decision.text,
-            category: decision.category,
-            authorId: auth.currentUser.uid
-          });
-        }
+        setProgress(40);
 
-        // Save action items
-        for (const item of data.actionItems) {
-          await addDoc(collection(db, 'actionItems'), {
-            meetingId: meetingRef.id,
-            responsible: item.responsible,
-            task: item.task,
-            dueDate: item.dueDate || null,
-            status: 'pending',
-            authorId: auth.currentUser.uid
+        // 2. Ping the Python LangGraph Backend Data Pipeline
+        try {
+          const response = await fetch('http://localhost:8000/process-meeting', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              meetingId: meetingRef.id,
+              authorId: auth.currentUser.uid,
+              transcript: text
+            })
           });
+
+          if (!response.ok) {
+            const errBody = await response.json();
+            throw new Error(errBody.detail || "Backend pipeline returned an error");
+          }
+        } catch (fetchErr) {
+           console.error("Backend fetch error:", fetchErr);
+           throw new Error("Unable to reach the Python Agent backend. Is the FastAPI server running on port 8000?");
         }
-      }
+      }  
       setProgress(100);
       setFiles([]);
       setTimeout(() => setUploading(false), 1000);
     } catch (err) {
       console.error(err);
-      setError("Failed to process transcript. Please ensure it's a valid format.");
+      setError(err instanceof Error ? err.message : "Failed to trigger analysis pipeline. Ensure backend is running.");
       setUploading(false);
     }
   };

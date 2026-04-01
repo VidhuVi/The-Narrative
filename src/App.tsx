@@ -5,6 +5,7 @@ import { TopBar } from './components/TopBar';
 import { Dashboard } from './pages/Dashboard';
 import { Upload } from './pages/Upload';
 import { Intelligence } from './pages/Intelligence';
+import { Workstream } from './pages/Workstream';
 import { Chat } from './pages/Chat';
 import { Landing } from './pages/Landing';
 import { Help } from './pages/Help';
@@ -34,17 +35,19 @@ const AppContent: React.FC = () => {
   const renderPage = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard onMeetingClick={(id) => { setSelectedMeetingId(id); setActiveTab('intelligence'); }} onUploadClick={() => setActiveTab('upload')} />;
+        return <Dashboard onMeetingClick={(id) => { setSelectedMeetingId(id); setActiveTab('intelligence'); }} onUploadClick={() => setActiveTab('upload')} onViewAllActions={() => setActiveTab('workstream')} />;
       case 'upload':
         return <Upload onComplete={() => setActiveTab('dashboard')} />;
       case 'intelligence':
-        return selectedMeetingId ? <Intelligence meetingId={selectedMeetingId} /> : <Dashboard onMeetingClick={(id) => { setSelectedMeetingId(id); setActiveTab('intelligence'); }} onUploadClick={() => setActiveTab('upload')} />;
+        return selectedMeetingId ? <Intelligence meetingId={selectedMeetingId} /> : <Dashboard onMeetingClick={(id) => { setSelectedMeetingId(id); setActiveTab('intelligence'); }} onUploadClick={() => setActiveTab('upload')} onViewAllActions={() => setActiveTab('workstream')} />;
+      case 'workstream':
+        return <Workstream  />;
       case 'chat':
         return <Chat />;
       case 'help':
         return <Help />;
       default:
-        return <Dashboard onMeetingClick={(id) => { setSelectedMeetingId(id); setActiveTab('intelligence'); }} onUploadClick={() => setActiveTab('upload')} />;
+        return <Dashboard onMeetingClick={(id) => { setSelectedMeetingId(id); setActiveTab('intelligence'); }} onUploadClick={() => setActiveTab('upload')} onViewAllActions={() => setActiveTab('workstream')} />;
     }
   };
 
@@ -53,6 +56,7 @@ const AppContent: React.FC = () => {
       case 'dashboard': return 'Dashboard';
       case 'upload': return 'Upload Transcript';
       case 'intelligence': return 'Meeting Intelligence';
+      case 'workstream': return 'Tasks & Decisions';
       case 'chat': return 'Global Inquiry';
       case 'help': return 'Documentation & Help';
       default: return 'The Narrative';

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { db, auth } from '../firebase';
-import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
-import { LayoutDashboard, CheckSquare, TrendingUp, ChevronRight, Video, Mic, FileText } from 'lucide-react';
+import { collection, query, where, onSnapshot, orderBy, limit, deleteDoc, doc } from 'firebase/firestore';
+import { LayoutDashboard, CheckSquare, TrendingUp, ChevronRight, Video, Mic, FileText, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'motion/react';
 
@@ -15,10 +15,21 @@ interface Meeting {
   sentimentData?: { overall: number };
 }
 
-export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploadClick?: () => void }> = ({ onMeetingClick, onUploadClick }) => {
+export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploadClick?: () => void, onViewAllActions?: () => void }> = ({ onMeetingClick, onUploadClick, onViewAllActions }) => {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [pendingActions, setPendingActions] = useState<any[]>([]);
   const [stats, setStats] = useState({ total: 0, pending: 0, sentiment: 0 });
+
+  const handleDeleteMeeting = async (e: React.MouseEvent, meetingId: string) => {
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to permanently delete this meeting?")) {
+      try {
+        await deleteDoc(doc(db, 'meetings', meetingId));
+      } catch (err) {
+        console.error("Failed to delete meeting", err);
+      }
+    }
+  };
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -142,15 +153,22 @@ export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploa
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="px-3 py-1 bg-surface-container-low text-[10px] font-bold uppercase tracking-widest text-on-surface-variant rounded-full flex items-center gap-1 border-l-2 border-green-500">
-                      {meeting.status}
+                    <div className="flex items-center gap-3">
+                      <div className="px-3 py-1 bg-surface-container-low text-[10px] font-bold uppercase tracking-widest text-on-surface-variant rounded-full flex items-center gap-1 border-l-2 border-green-500">
+                        {meeting.status}
+                      </div>
+                      <button 
+                        onClick={(e) => handleDeleteMeeting(e, meeting.id)}
+                        className="p-2 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                        title="Delete Meeting"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <ChevronRight className="text-on-surface-variant opacity-20 group-hover:opacity-100 transition-opacity w-5 h-5 ml-2" />
                     </div>
-                    <ChevronRight className="text-on-surface-variant opacity-20 group-hover:opacity-100 transition-opacity w-5 h-5" />
                   </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
           </div>
         </section>
 
@@ -173,7 +191,7 @@ export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploa
                 </div>
               )}
             </div>
-            <button onClick={() => alert("Centralized Actions view coming soon!")} className="w-full py-2 text-xs font-bold text-primary-container bg-surface-container-high rounded-lg hover:bg-surface-container-highest transition-colors">
+            <button onClick={onViewAllActions} className="w-full py-2 text-xs font-bold text-primary-container bg-surface-container-high rounded-lg hover:bg-surface-container-highest transition-colors">
               View All Actions
             </button>
           </div>

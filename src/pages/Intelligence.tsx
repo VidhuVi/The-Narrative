@@ -10,30 +10,15 @@ interface Meeting {
   title: string;
   summary: string;
   transcriptContent: string;
-  sentimentData: {
+  status: string;
+  sentimentData?: {
     overall: number;
     segments: { time: string; sentiment: string; text: string; speaker?: string }[];
-  };
-}
-
-interface Decision {
-  id: string;
-  text: string;
-  category: string;
-}
-
-interface ActionItem {
-  id: string;
-  responsible: string;
-  task: string;
-  dueDate: string;
-  status: string;
+  } | null;
 }
 
 export const Intelligence: React.FC<{ meetingId: string }> = ({ meetingId }) => {
   const [meeting, setMeeting] = useState<Meeting | null>(null);
-  const [decisions, setDecisions] = useState<Decision[]>([]);
-  const [actionItems, setActionItems] = useState<ActionItem[]>([]);
   const [chatQuery, setChatQuery] = useState('');
   const [chatResponse, setChatResponse] = useState<string | null>(null);
   const [chatLoading, setChatLoading] = useState(false);
@@ -47,31 +32,7 @@ export const Intelligence: React.FC<{ meetingId: string }> = ({ meetingId }) => 
       }
     };
 
-    if (!auth.currentUser) return;
-
-    const qDecisions = query(
-      collection(db, 'decisions'), 
-      where('meetingId', '==', meetingId),
-      where('authorId', '==', auth.currentUser.uid)
-    );
-    const unsubscribeDecisions = onSnapshot(qDecisions, (snapshot) => {
-      setDecisions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Decision)));
-    }, (error) => console.error("Decisions fetch error:", error));
-
-    const qActions = query(
-      collection(db, 'actionItems'), 
-      where('meetingId', '==', meetingId),
-      where('authorId', '==', auth.currentUser.uid)
-    );
-    const unsubscribeActions = onSnapshot(qActions, (snapshot) => {
-      setActionItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActionItem)));
-    }, (error) => console.error("Actions fetch error:", error));
-
     fetchMeeting();
-    return () => {
-      unsubscribeDecisions();
-      unsubscribeActions();
-    };
   }, [meetingId]);
 
   const handleChat = async () => {
@@ -87,29 +48,18 @@ export const Intelligence: React.FC<{ meetingId: string }> = ({ meetingId }) => 
     }
   };
 
-  const exportCSV = () => {
-    if (!meeting) return;
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Type,Category/Assignee,Text/Task,Due Date\n";
-    
-    decisions.forEach(d => {
-      csvContent += `Decision,"${d.category}","${d.text.replace(/"/g, '""')}",\n`;
-    });
-    
-    actionItems.forEach(a => {
-      csvContent += `Action Item,"${a.responsible}","${a.task.replace(/"/g, '""')}","${a.dueDate || ''}"\n`;
-    });
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `meeting_export_${meeting.title.replace(/\\s+/g, '_')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   if (!meeting) return <div className="p-10 text-center">Loading meeting intelligence...</div>;
+
+  if (meeting.status === 'processing' || !meeting.sentimentData?.segments) {
+    return (
+      <div className="p-20 text-center flex flex-col items-center gap-4 max-w-md mx-auto mt-20 bg-surface-container-lowest rounded-3xl border border-outline-variant/20 shadow-sm">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+        <h3 className="font-headline font-bold text-xl text-primary mt-2">Agents Active</h3>
+        <p className="text-on-surface-variant text-sm leading-relaxed">The LangGraph swarm is currently processing this transcript. This screen will automatically populate when the intelligence report is finalized by the Executive agent.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -191,22 +141,33 @@ export const Intelligence: React.FC<{ meetingId: string }> = ({ meetingId }) => 
         </div>
       </section>
 
+      {/* AI Summary Insert */}
+      <div className="bg-surface-container-low p-6 rounded-xl border border-outline-variant/10">
+        <div className="flex items-center space-x-2 mb-3">
+          <BrainCircuit className="text-primary w-5 h-5" />
+          <h4 className="text-sm font-bold text-primary uppercase">Executive Narrative Synthesis</h4>
+        </div>
+        <p className="text-sm font-medium text-on-surface-variant leading-relaxed">
+          {meeting.summary}
+        </p>
+      </div>
+
       <div className="grid grid-cols-12 gap-8">
-        <div className="col-span-12 xl:col-span-8 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col border border-outline-variant/10">
+        <div className="col-span-12 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col border border-outline-variant/10">
           <div className="p-6 border-b border-surface-container flex items-center justify-between">
             <h3 className="font-bold text-lg font-headline">Dialogue Flow</h3>
           </div>
-          <div className="p-8 space-y-10 overflow-y-auto max-h-[600px]">
+          <div className="p-8 space-y-10 overflow-y-auto max-h-[800px]">
             {meeting.sentimentData.segments.map((seg, i) => (
               <div key={i} className="flex space-x-6 relative">
                 {seg.sentiment === 'Conflict' && <div className="absolute -left-8 top-0 bottom-0 w-1 bg-error rounded-full"></div>}
                 {seg.sentiment === 'Agreement' && <div className="absolute -left-8 top-0 bottom-0 w-1 bg-emerald-500 rounded-full"></div>}
-                <div className="flex-shrink-0 w-24">
-                  <p className="text-[10px] font-black text-primary tracking-widest mb-1">{seg.time}</p>
-                  <div className="px-2 py-1 bg-surface-container-low rounded text-[10px] font-bold text-center line-clamp-1">{seg.speaker || 'Unknown'}</div>
+                <div className="flex-shrink-0 w-32">
+                  <p className="text-xs font-black text-primary tracking-widest mb-1">{seg.time}</p>
+                  <div className="px-3 py-1.5 bg-surface-container-low rounded text-xs font-bold text-center line-clamp-1">{seg.speaker || 'Unknown'}</div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-on-surface leading-relaxed font-body text-sm">
+                <div className="flex-1 lg:max-w-4xl">
+                  <p className="text-on-surface leading-loose font-body text-[15px]">
                     {seg.text}
                   </p>
                   {seg.sentiment === 'Conflict' && (
@@ -224,76 +185,6 @@ export const Intelligence: React.FC<{ meetingId: string }> = ({ meetingId }) => 
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-
-        <div className="col-span-12 xl:col-span-4 space-y-8">
-          <section className="bg-primary text-white rounded-xl p-6 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-10">
-              <Gavel className="w-24 h-24" />
-            </div>
-            <div className="relative z-10">
-              <h3 className="text-xl font-extrabold mb-4 flex items-center space-x-2 font-headline">
-                <CheckCircle2 className="w-5 h-5" />
-                <span>Key Decisions</span>
-              </h3>
-              <ul className="space-y-4">
-                {decisions.map((d) => (
-                  <li key={d.id} className="p-3 bg-white/10 rounded border-l-4 border-emerald-500">
-                    <p className="text-xs font-bold uppercase text-white/60 mb-1">{d.category}</p>
-                    <p className="text-sm font-medium">{d.text}</p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </section>
-
-          <section className="bg-white rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden">
-            <div className="p-6 border-b border-surface-container flex items-center justify-between">
-              <h3 className="font-bold text-lg font-headline">Action Items</h3>
-              <button onClick={exportCSV} className="text-primary hover:underline text-xs font-bold flex items-center space-x-1">
-                <Download className="w-4 h-4" />
-                <span>EXPORT CSV</span>
-              </button>
-            </div>
-            <div className="divide-y divide-surface-container">
-              {actionItems.map((item) => (
-                <div key={item.id} className="p-4 hover:bg-surface-container-low transition-colors">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-xs">
-                        {item.responsible[0]}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold">{item.task}</p>
-                        <p className="text-[10px] text-on-surface-variant font-medium">Assignee: {item.responsible}</p>
-                      </div>
-                    </div>
-                    <div className={`px-2 py-0.5 text-[10px] font-bold rounded uppercase ${
-                      item.status === 'pending' ? 'bg-tertiary-container/20 text-tertiary' : 'bg-emerald-50 text-emerald-700'
-                    }`}>
-                      {item.dueDate || 'ASAP'}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between mt-3">
-                    <div className="flex -space-x-2">
-                      <div className="w-6 h-6 rounded-full ring-2 ring-white bg-slate-300"></div>
-                    </div>
-                    <ChevronRight className="text-slate-300 w-4 h-4" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <div className="bg-surface-container-low p-6 rounded-xl border-t-2 border-primary">
-            <div className="flex items-center space-x-2 mb-3">
-              <BrainCircuit className="text-primary w-5 h-5" />
-              <h4 className="text-sm font-bold text-primary uppercase">AI Narrative Summary</h4>
-            </div>
-            <p className="text-xs text-on-surface-variant leading-relaxed italic">
-              {meeting.summary}
-            </p>
           </div>
         </div>
       </div>

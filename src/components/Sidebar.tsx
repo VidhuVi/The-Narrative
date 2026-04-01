@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, CloudUpload, BrainCircuit, MessageSquare, HelpCircle, LogOut, Plus } from 'lucide-react';
+import { LayoutDashboard, CloudUpload, BrainCircuit, MessageSquare, HelpCircle, LogOut, Plus, CheckSquare } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -20,6 +20,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'upload', label: 'Upload', icon: CloudUpload },
     { id: 'intelligence', label: 'Intelligence', icon: BrainCircuit },
+    { id: 'workstream', label: 'Workstream', icon: CheckSquare },
     { id: 'chat', label: 'Chat', icon: MessageSquare },
   ];
 
