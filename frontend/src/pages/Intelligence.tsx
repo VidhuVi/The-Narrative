@@ -3,7 +3,7 @@ import { db, auth } from '../core/firebase';
 import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { BrainCircuit, Gavel, CheckCircle2, ChevronRight, Download, MessageSquare, Send, Paperclip, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { geminiService } from '../services/gemini';
+import ReactMarkdown from 'react-markdown';
 import { Meeting } from '../types';
 
 export const Intelligence: React.FC<{ meetingId: string }> = ({ meetingId }) => {
@@ -28,12 +28,30 @@ export const Intelligence: React.FC<{ meetingId: string }> = ({ meetingId }) => 
     if (!chatQuery || !meeting) return;
     setChatLoading(true);
     try {
-      const response = await geminiService.chatWithTranscripts(chatQuery, [{ title: meeting.title, content: meeting.transcriptContent }]);
-      setChatResponse(response);
+      const token = await auth.currentUser?.getIdToken();
+      const targetUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${targetUrl}/chat-inquiry`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          query: chatQuery,
+          transcripts: [{ title: meeting.title, content: meeting.transcriptContent }]
+        })
+      });
+
+      if (!response.ok) throw new Error("Backend query failed");
+      const data = await response.json();
+      setChatResponse(data.response);
     } catch (err) {
       console.error(err);
+      setChatResponse("Error: Could not reach Narrative Intelligence Hub backend.");
     } finally {
       setChatLoading(false);
+      setChatQuery(''); // clear the input box
     }
   };
 
@@ -185,8 +203,8 @@ export const Intelligence: React.FC<{ meetingId: string }> = ({ meetingId }) => 
         </div>
         <div className="p-6 space-y-6">
           {chatResponse && (
-            <div className="bg-surface-container-low p-4 rounded-xl text-sm leading-relaxed text-on-surface">
-              {chatResponse}
+            <div className="bg-surface-container-low p-6 rounded-2xl shadow-sm text-sm leading-relaxed text-on-surface prose prose-sm md:prose-base prose-slate max-w-none prose-headings:font-headline prose-headings:text-primary prose-a:text-blue-600">
+              <ReactMarkdown>{chatResponse}</ReactMarkdown>
             </div>
           )}
           <div className="flex items-end gap-3">
