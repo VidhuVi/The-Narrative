@@ -1,21 +1,28 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 import firebase_admin
-from firebase_admin import credentials, firestore
-from agent import process_transcript_swarm
+from firebase_admin import credentials, firestore, auth as firebase_auth
+from agent import process_transcript_swarm, chat_global
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app = FastAPI()
 
-# Allow frontend requests
+# Restrict CORS to specific frontend domains
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+]
+if os.getenv("FRONTEND_URL"):
+    allowed_origins.append(os.getenv("FRONTEND_URL"))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow localhost Vite
-    allow_credentials=False,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -40,15 +47,28 @@ else:
 
 class MeetingProcessRequest(BaseModel):
     meetingId: str
-    authorId: str
     transcript: str
 
+# Robust Auth Dependancy
+async def verify_token(authorization: str = Header(None)) -> str:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized. Missing or invalid Authorization header.")
+    
+    token = authorization.split("Bearer ")[1]
+    try:
+        # Cryptographically verify the token Signature using Firebase Admin context
+        decoded_token = firebase_auth.verify_id_token(token)
+        return decoded_token["uid"]
+    except Exception as e:
+        print(f"Token verification failed: {str(e)}")
+        raise HTTPException(status_code=401, detail="Unauthorized. Invalid or expired token.")
+
 @app.post("/process-meeting")
-async def process_meeting(req: MeetingProcessRequest):
+async def process_meeting(req: MeetingProcessRequest, uid: str = Depends(verify_token)):
     if not db:
         raise HTTPException(status_code=500, detail="Firebase Admin key not found on server.")
         
-    print(f"\n[+] Received transcript for Meeting {req.meetingId}. Launching Agent Swarm...")
+    print(f"\n[+] Received transcript for Meeting {req.meetingId} from user {uid}. Launching Agent Swarm...")
     
     try:
         # 1. Trigger the LangGraph Multi-Agent Pipeline
@@ -61,6 +81,9 @@ async def process_meeting(req: MeetingProcessRequest):
         sentiment = result_state.get("sentiment_summary", {})
         exec_summary = result_state.get("executive_summary", "")
         
+        # Dynamically extract all unique speakers identified by the EQ Agent
+        detected_speakers = list(set([seg.get("speaker", "Unknown") for seg in sentiment.get("segments", [])]))
+        
         batch = db.batch()
         
         # Update core meeting document with the Executive Agent's summary
@@ -68,7 +91,8 @@ async def process_meeting(req: MeetingProcessRequest):
         batch.update(meeting_ref, {
             "status": "processed",
             "summary": exec_summary,
-            "sentimentData": sentiment
+            "sentimentData": sentiment,
+            "speakers": detected_speakers
         })
         
         # Write the Analyst Agent's decisions
@@ -78,7 +102,7 @@ async def process_meeting(req: MeetingProcessRequest):
             batch.set(d_doc, {
                 **d,
                 "meetingId": req.meetingId,
-                "authorId": req.authorId
+                "authorId": uid
             })
             
         # Write the Analyst Agent's action items
@@ -88,7 +112,7 @@ async def process_meeting(req: MeetingProcessRequest):
             batch.set(a_doc, {
                 **a,
                 "meetingId": req.meetingId,
-                "authorId": req.authorId,
+                "authorId": uid,
                 "status": "pending"
             })
             
@@ -101,6 +125,24 @@ async def process_meeting(req: MeetingProcessRequest):
         print(f"[ERROR] Agent pipeline failed: {e}")
         if db:
             db.collection("meetings").document(req.meetingId).update({"status": "error"})
+        raise HTTPException(status_code=500, detail=str(e))
+
+class ChatRequest(BaseModel):
+    query: str
+    transcripts: list[dict] # expects [{"title": "...", "content": "..."}]
+
+@app.post("/chat-inquiry")
+async def chat_inquiry(req: ChatRequest, uid: str = Depends(verify_token)):
+    print(f"\n[+] Received global text chat request from user {uid}.")
+    context = ""
+    for t in req.transcripts:
+        context += f"Meeting: {t.get('title')}\nContent: {t.get('content')}\n\n---\n\n"
+        
+    try:
+        reply = await chat_global(req.query, context)
+        return {"response": reply}
+    except Exception as e:
+        print(f"[ERROR] Chat failure: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

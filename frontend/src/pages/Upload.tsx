@@ -54,12 +54,17 @@ export const Upload: React.FC = () => {
 
         // 2. Ping the Python LangGraph Backend Data Pipeline
         try {
-          const response = await fetch('http://localhost:8000/process-meeting', {
+          const token = await auth.currentUser.getIdToken();
+          const targetUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+          
+          const response = await fetch(`${targetUrl}/process-meeting`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({
               meetingId: meetingRef.id,
-              authorId: auth.currentUser.uid,
               transcript: text
             })
           });

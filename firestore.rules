@@ -1,87 +1,43 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: meetings
-    // Fields: title, date, wordCount, speakers, summary, transcriptContent, sentimentData, status, authorId
-    //
-    // Collection: decisions
-    // Fields: meetingId, text, category, authorId
-    //
-    // Collection: actionItems
-    // Fields: meetingId, responsible, task, dueDate, status, authorId
-    //
-    // ===============================================================
-
-    // ===============================================================
-    // Helper Functions
-    // ===============================================================
+    
+    // A helper function to verify a user is signed in
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+    // Is the user trying to access a document they own based on the doc's authorId?
+    function isOwner(documentData) {
+      return documentData.authorId == request.auth.uid;
     }
 
-    function isDocOwner() {
-      return isAuthenticated() && request.auth.uid == resource.data.authorId;
+    // Does the incoming payload enforce the caller's auth UID as the authorId?
+    function enforcesOwnerInPayload() {
+      return request.resource.data.authorId == request.auth.uid;
     }
 
-    function authorIdUnchanged() {
-      return !('authorId' in request.resource.data) || request.resource.data.authorId == request.auth.uid;
-    }
-
-    function authorIdNotModified() {
-      return !('authorId' in request.resource.data) || request.resource.data.authorId == resource.data.authorId;
-    }
-
-    function isValidMeeting(data) {
-      return data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
-             data.status in ['processing', 'processed', 'error'] &&
-             data.authorId == request.auth.uid;
-    }
-
-    function isValidDecision(data) {
-      return data.meetingId is string &&
-             data.text is string && data.text.size() > 0 && data.text.size() < 1000 &&
-             data.authorId == request.auth.uid;
-    }
-
-    function isValidActionItem(data) {
-      return data.meetingId is string &&
-             data.responsible is string && data.responsible.size() > 0 &&
-             data.task is string && data.task.size() > 0 &&
-             data.status in ['pending', 'completed'] &&
-             data.authorId == request.auth.uid;
-    }
-
-    // ===============================================================
-    // Rules
-    // ===============================================================
+    // -------------------------------------------------------------
+    // Security Rules by Collection
+    // -------------------------------------------------------------
 
     match /meetings/{meetingId} {
-      allow read: if isDocOwner();
-      allow create: if isAuthenticated() && isValidMeeting(request.resource.data);
-      allow update: if isDocOwner() && isValidMeeting(request.resource.data) && authorIdNotModified();
-      allow delete: if isDocOwner();
+      // Any authenticated user can create a meeting if they stamp it with their own UID
+      allow create: if isAuthenticated() && enforcesOwnerInPayload();
+      
+      // A user can only read, update, or delete a meeting if they are the verified author
+      allow read, update, delete: if isAuthenticated() && isOwner(resource.data);
+    }
+
+    match /actionItems/{itemId} {
+      allow create: if isAuthenticated() && enforcesOwnerInPayload();
+      allow read, update, delete: if isAuthenticated() && isOwner(resource.data);
     }
 
     match /decisions/{decisionId} {
-      allow read: if isDocOwner();
-      allow create: if isAuthenticated() && isValidDecision(request.resource.data);
-      allow update: if isDocOwner() && isValidDecision(request.resource.data) && authorIdNotModified();
-      allow delete: if isDocOwner();
-    }
-
-    match /actionItems/{actionItemId} {
-      allow read: if isDocOwner();
-      allow create: if isAuthenticated() && isValidActionItem(request.resource.data);
-      allow update: if isDocOwner() && isValidActionItem(request.resource.data) && authorIdNotModified();
-      allow delete: if isDocOwner();
+      allow create: if isAuthenticated() && enforcesOwnerInPayload();
+      allow read, update, delete: if isAuthenticated() && isOwner(resource.data);
     }
   }
 }

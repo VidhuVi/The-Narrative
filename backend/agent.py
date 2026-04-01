@@ -108,3 +108,23 @@ async def process_transcript_swarm(transcript_text: str) -> dict:
     # Invoke the graph asynchronously
     final_state = await graph.ainvoke(initial_state)
     return final_state
+
+async def chat_global(query: str, transcripts_context: str) -> str:
+    """
+    Takes the concatenated history of the user's selected meetings and answers a question.
+    """
+    prompt = f"""You are an AI assistant for 'The Narrative', an editorial intelligence hub. 
+Answer the user's question explicitly based on the following meeting transcripts. 
+
+CRITICAL INSTRUCTION: You must ALWAYS cite your sources using exact verbatim quotes from the part of the transcript your answer came from.
+Format citations cleanly, for example:
+According to the [Meeting Title]: > 'insert exact transcript quote here'
+
+Context:
+{transcripts_context}
+
+Question: {query}"""
+
+    # We use a standard generation call (not structured JSON output) to return a markdown string
+    response = await llm.ainvoke(prompt)
+    return response.content

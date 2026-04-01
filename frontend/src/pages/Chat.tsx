@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../core/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { geminiService } from '../services/gemini';
 import { MessageSquare, Send, Paperclip, BrainCircuit, Plus, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
@@ -34,13 +33,32 @@ export const Chat: React.FC = () => {
 
     try {
       const contextMeetings = selectedMeetings.length > 0 ? selectedMeetings : meetings;
-      const response = await geminiService.chatWithTranscripts(
-        userMsg, 
-        contextMeetings.map(m => ({ title: m.title, content: m.transcriptContent }))
-      );
-      setMessages(prev => [...prev, { role: 'ai', text: response }]);
+      const transcriptsContext = contextMeetings.map(m => ({ title: m.title, content: m.transcriptContent }));
+      
+      const token = await auth.currentUser?.getIdToken();
+      const targetUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${targetUrl}/chat-inquiry`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          query: userMsg,
+          transcripts: transcriptsContext
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch from backend chat proxy");
+      }
+      
+      const data = await response.json();
+      setMessages(prev => [...prev, { role: 'ai', text: data.response }]);
     } catch (err) {
       console.error(err);
+      setMessages(prev => [...prev, { role: 'ai', text: "Error: Could not reach Narrative Intelligence Hub backend." }]);
     } finally {
       setLoading(false);
     }
