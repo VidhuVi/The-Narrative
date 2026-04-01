@@ -14,12 +14,12 @@ export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploa
   const handleDownloadReport = () => {
     let mdContent = `# The Narrative: Executive Summary Report\n\n`;
     mdContent += `**Generated:** ${format(new Date(), 'PPP p')}\n\n`;
-    
+
     mdContent += `## 📊 Global Ecosystem Statistics\n`;
     mdContent += `- **Total Meetings Processed:** ${stats.total}\n`;
     mdContent += `- **Organizational Pending Actions:** ${stats.pending}\n`;
     mdContent += `- **Average Global Sentiment Alignment:** ${stats.sentiment}%\n\n`;
-    
+
     mdContent += `## 📝 Recent Meeting Diagnostics\n`;
     meetings.forEach(m => {
       mdContent += `### ${m.title}\n`;
@@ -70,7 +70,7 @@ export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploa
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Meeting));
       setMeetings(data);
-      
+
       const total = data.length;
       const sentiment = data.reduce((acc, m) => acc + (m.sentimentData?.overall || 0), 0) / (total || 1);
       setStats(prev => ({ ...prev, total, sentiment: Math.round(sentiment) }));
@@ -104,11 +104,11 @@ export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploa
     <div className="space-y-10">
       <section className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="space-y-2">
-          <h1 className="text-5xl font-extrabold tracking-tight text-primary font-headline leading-tight">Editorial<br/>Intelligence</h1>
+          <h1 className="text-5xl font-extrabold tracking-tight text-primary font-headline leading-tight">Editorial<br />Intelligence</h1>
           <p className="text-on-surface-variant font-body max-w-md">Your narrative ecosystem has processed {meetings.length} new discussions. Key themes focus on "Q4 Strategy" and "Technical Debt".</p>
         </div>
         <div className="flex gap-3">
-          <button 
+          <button
             onClick={handleDownloadReport}
             className="px-6 py-3 bg-white border border-outline-variant/30 text-on-surface-variant rounded-lg font-bold text-sm transition-all hover:border-primary hover:text-primary hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center gap-2 group"
           >
@@ -123,7 +123,7 @@ export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploa
 
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {statCards.map((stat, i) => (
-          <motion.div 
+          <motion.div
             key={i}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -157,10 +157,10 @@ export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploa
               </div>
             ) : (
               meetings.map((meeting) => (
-                <div 
+                <div
                   key={meeting.id}
                   onClick={() => onMeetingClick(meeting.id)}
-                  className="p-5 flex items-center gap-6 hover:bg-surface-container-low transition-colors group cursor-pointer border-b border-surface-variant/20 last:border-0"
+                  className="p-5 flex items-center gap-6 hover:bg-surface-container-low transition-colors group cursor-pointer border-b-1 border-gray-200 last:border-0"
                 >
                   <div className="w-12 h-12 rounded bg-primary/5 flex items-center justify-center text-primary">
                     {meeting.title.toLowerCase().includes('sync') ? <Video className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
@@ -183,22 +183,22 @@ export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploa
                       </div>
                     )}
                   </div>
-                    <div className="flex items-center gap-3">
-                      <div className="px-3 py-1 bg-surface-container-low text-[10px] font-bold uppercase tracking-widest text-on-surface-variant rounded-full flex items-center gap-1 border-l-2 border-green-500">
-                        {meeting.status}
-                      </div>
-                      <button 
-                        onClick={(e) => handleDeleteMeeting(e, meeting.id)}
-                        className="p-2 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-full transition-colors opacity-0 group-hover:opacity-100"
-                        title="Delete Meeting"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                      <ChevronRight className="text-on-surface-variant opacity-20 group-hover:opacity-100 transition-opacity w-5 h-5 ml-2" />
+                  <div className="flex items-center gap-3">
+                    <div className="px-3 py-1 bg-surface-container-low text-[10px] font-bold uppercase tracking-widest text-on-surface-variant rounded-full flex items-center gap-1 border-l-2 border-green-500">
+                      {meeting.status}
                     </div>
+                    <button
+                      onClick={(e) => handleDeleteMeeting(e, meeting.id)}
+                      className="p-2 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                      title="Delete Meeting"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <ChevronRight className="text-on-surface-variant opacity-20 group-hover:opacity-100 transition-opacity w-5 h-5 ml-2" />
                   </div>
-                ))
-              )}
+                </div>
+              ))
+            )}
           </div>
         </section>
 

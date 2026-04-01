@@ -25,7 +25,7 @@ export const Chat: React.FC = () => {
 
   const handleSend = async () => {
     if (!queryText) return;
-    
+
     const userMsg = queryText;
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setQueryText('');
@@ -34,10 +34,10 @@ export const Chat: React.FC = () => {
     try {
       const contextMeetings = selectedMeetings.length > 0 ? selectedMeetings : meetings;
       const transcriptsContext = contextMeetings.map(m => ({ title: m.title, content: m.transcriptContent }));
-      
+
       const token = await auth.currentUser?.getIdToken();
       const targetUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-      
+
       const response = await fetch(`${targetUrl}/chat-inquiry`, {
         method: 'POST',
         headers: {
@@ -49,11 +49,11 @@ export const Chat: React.FC = () => {
           transcripts: transcriptsContext
         })
       });
-      
+
       if (!response.ok) {
         throw new Error("Failed to fetch from backend chat proxy");
       }
-      
+
       const data = await response.json();
       setMessages(prev => [...prev, { role: 'ai', text: data.response }]);
     } catch (err) {
@@ -65,7 +65,7 @@ export const Chat: React.FC = () => {
   };
 
   const toggleMeeting = (m: Meeting) => {
-    setSelectedMeetings(prev => 
+    setSelectedMeetings(prev =>
       prev.find(p => p.id === m.id) ? prev.filter(p => p.id !== m.id) : [...prev, m]
     );
   };
@@ -80,7 +80,7 @@ export const Chat: React.FC = () => {
               <h3 className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-3">Suggested Questions</h3>
               <div className="flex flex-col gap-2">
                 {["What were the main decisions made?", "Who is responsible for the next steps?", "Summarize the overall sentiment."].map((q, i) => (
-                  <button 
+                  <button
                     key={i}
                     onClick={() => setQueryText(q)}
                     className="text-left text-xs text-primary font-medium p-2 bg-primary/5 rounded border border-primary/10 hover:bg-primary/10"
@@ -97,7 +97,7 @@ export const Chat: React.FC = () => {
       <div className="flex-1 flex flex-col relative">
         <div className="flex-1 overflow-y-auto p-8 space-y-10">
           {messages.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center text-on-surface-variant space-y-4">
+            <div className="h-full flex flex-col items-center justify-center  text-on-surface-variant space-y-4">
               <BrainCircuit className="w-12 h-12 opacity-20" />
               <p className="text-sm font-medium">Ask anything about your meeting intelligence...</p>
             </div>
@@ -140,7 +140,7 @@ export const Chat: React.FC = () => {
                     <button onClick={() => toggleMeeting(m)}><X className="w-3 h-3" /></button>
                   </div>
                 ))}
-                <button 
+                <button
                   onClick={() => setShowMeetingPicker(!showMeetingPicker)}
                   className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold text-primary hover:bg-primary/5"
                 >
@@ -149,10 +149,10 @@ export const Chat: React.FC = () => {
                 </button>
               </div>
             </div>
-            
+
             <AnimatePresence>
               {showMeetingPicker && (
-                <motion.div 
+                <motion.div
                   initial={{ height: 0 }}
                   animate={{ height: 'auto' }}
                   exit={{ height: 0 }}
@@ -163,9 +163,8 @@ export const Chat: React.FC = () => {
                       <button
                         key={m.id}
                         onClick={() => toggleMeeting(m)}
-                        className={`text-left p-2 rounded text-xs font-medium transition-colors ${
-                          selectedMeetings.find(p => p.id === m.id) ? 'bg-primary text-white' : 'hover:bg-slate-100'
-                        }`}
+                        className={`text-left p-2 rounded text-xs font-medium transition-colors ${selectedMeetings.find(p => p.id === m.id) ? 'bg-primary text-white' : 'hover:bg-slate-100'
+                          }`}
                       >
                         {m.title}
                       </button>
@@ -177,12 +176,12 @@ export const Chat: React.FC = () => {
 
             <div className="p-4 flex items-end gap-3 bg-white">
               <div className="flex-1">
-                <textarea 
+                <textarea
                   value={queryText}
                   onChange={(e) => setQueryText(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-                  className="w-full border-none focus:ring-0 text-sm font-body resize-none p-0 placeholder:text-slate-400" 
-                  placeholder="Ask anything about your meeting intelligence..." 
+                  className="w-full border-none focus:ring-0 text-sm font-body resize-none p-[0.5rem] placeholder:text-slate-400"
+                  placeholder="Ask anything about your meeting intelligence..."
                   rows={2}
                 />
               </div>
@@ -190,7 +189,7 @@ export const Chat: React.FC = () => {
                 <button className="p-2 text-slate-400 hover:text-primary transition-colors">
                   <Paperclip className="w-5 h-5" />
                 </button>
-                <button 
+                <button
                   onClick={handleSend}
                   className="bg-primary text-white p-3 rounded-xl hover:opacity-90 active:scale-90 transition-all shadow-md flex items-center justify-center"
                 >
