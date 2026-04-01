@@ -39,7 +39,16 @@ const AppContent: React.FC = () => {
       case 'upload':
         return <Upload onComplete={() => setActiveTab('dashboard')} />;
       case 'intelligence':
-        return selectedMeetingId ? <Intelligence meetingId={selectedMeetingId} /> : <Dashboard onMeetingClick={(id) => { setSelectedMeetingId(id); setActiveTab('intelligence'); }} onUploadClick={() => setActiveTab('upload')} onViewAllActions={() => setActiveTab('workstream')} />;
+        return selectedMeetingId ? <Intelligence meetingId={selectedMeetingId} /> : (
+          <div className="flex flex-col items-center justify-center p-20 text-center bg-white rounded-3xl shadow-sm border border-outline-variant/10 max-w-2xl mx-auto mt-10">
+            <BrainCircuit className="w-16 h-16 text-primary/20 mb-6" />
+            <h2 className="text-2xl font-black text-primary font-headline tracking-tight mb-2">No Context Selected</h2>
+            <p className="text-on-surface-variant max-w-sm mx-auto mb-8 font-body leading-relaxed">Please return to the Master Dashboard and select a specific transcript to generate or view its intelligence narrative.</p>
+            <button onClick={() => setActiveTab('dashboard')} className="px-6 py-3 bg-primary text-white font-bold tracking-tight uppercase text-sm rounded-xl shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all">
+              Return to Dashboard
+            </button>
+          </div>
+        );
       case 'workstream':
         return <Workstream  />;
       case 'chat':
