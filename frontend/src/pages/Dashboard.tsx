@@ -1,19 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { db, auth } from '../firebase';
+import { db, auth } from '../core/firebase';
 import { collection, query, where, onSnapshot, orderBy, limit, deleteDoc, doc } from 'firebase/firestore';
 import { LayoutDashboard, CheckSquare, TrendingUp, ChevronRight, Video, Mic, FileText, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'motion/react';
-
-interface Meeting {
-  id: string;
-  title: string;
-  date: any;
-  wordCount: number;
-  speakers: string[];
-  status: string;
-  sentimentData?: { overall: number };
-}
+import { Meeting } from '../types';
 
 export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploadClick?: () => void, onViewAllActions?: () => void }> = ({ onMeetingClick, onUploadClick, onViewAllActions }) => {
   const [meetings, setMeetings] = useState<Meeting[]>([]);

@@ -1,6 +1,6 @@
 import React from 'react';
 import { LayoutDashboard, CloudUpload, BrainCircuit, MessageSquare, HelpCircle, LogOut, Plus, CheckSquare } from 'lucide-react';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 

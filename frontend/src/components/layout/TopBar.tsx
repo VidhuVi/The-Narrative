@@ -1,8 +1,8 @@
 import React from 'react';
 import { Search, Bell, Settings } from 'lucide-react';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../../core/firebase';
 import { useState, useEffect } from 'react';
 
 interface TopBarProps {

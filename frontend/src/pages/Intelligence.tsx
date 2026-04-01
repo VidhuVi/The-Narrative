@@ -1,21 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { db, auth } from '../firebase';
+import { db, auth } from '../core/firebase';
 import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { BrainCircuit, Gavel, CheckCircle2, ChevronRight, Download, MessageSquare, Send, Paperclip, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { geminiService } from '../services/gemini';
-
-interface Meeting {
-  id: string;
-  title: string;
-  summary: string;
-  transcriptContent: string;
-  status: string;
-  sentimentData?: {
-    overall: number;
-    segments: { time: string; sentiment: string; text: string; speaker?: string }[];
-  } | null;
-}
+import { Meeting } from '../types';
 
 export const Intelligence: React.FC<{ meetingId: string }> = ({ meetingId }) => {
   const [meeting, setMeeting] = useState<Meeting | null>(null);

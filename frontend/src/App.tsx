@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { AuthProvider, useAuth } from './components/AuthContext';
-import { Sidebar } from './components/Sidebar';
-import { TopBar } from './components/TopBar';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Sidebar } from './components/layout/Sidebar';
+import { TopBar } from './components/layout/TopBar';
 import { Dashboard } from './pages/Dashboard';
 import { Upload } from './pages/Upload';
 import { Intelligence } from './pages/Intelligence';

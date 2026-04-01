@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { CloudUpload, FileText, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
-import { db, auth } from '../firebase';
+import { db, auth } from '../core/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 

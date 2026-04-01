@@ -1,16 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth } from '../firebase';
+import { db, auth } from '../core/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { geminiService } from '../services/gemini';
 import { MessageSquare, Send, Paperclip, BrainCircuit, Plus, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-
-interface Meeting {
-  id: string;
-  title: string;
-  transcriptContent: string;
-}
-
+import { Meeting } from '../types';
 export const Chat: React.FC = () => {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [selectedMeetings, setSelectedMeetings] = useState<Meeting[]>([]);

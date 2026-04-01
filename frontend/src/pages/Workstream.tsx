@@ -1,29 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth } from '../firebase';
+import { db, auth } from '../core/firebase';
 import { collection, query, where, onSnapshot, updateDoc, doc, orderBy } from 'firebase/firestore';
 import { CheckSquare, Circle, CheckCircle2, Gavel, Calendar, FileText, Filter } from 'lucide-react';
 import { motion } from 'motion/react';
-
-interface ActionItem {
-  id: string;
-  meetingId: string;
-  task: string;
-  responsible: string;
-  dueDate: string;
-  status: string;
-}
-
-interface Decision {
-  id: string;
-  meetingId: string;
-  text: string;
-  category: string;
-}
-
-interface MeetingRef {
-  id: string;
-  title: string;
-}
+import { ActionItem, Decision, MeetingRef } from '../types';
 
 export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ initialMeetingId }) => {
   const [actions, setActions] = useState<ActionItem[]>([]);
