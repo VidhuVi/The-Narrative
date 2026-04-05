@@ -45,9 +45,28 @@ app.add_middleware(
 )
 
 # Initialize Firebase Admin securely
+import base64
+import json
+
+base64_cred = os.getenv("FIREBASE_SERVICE_ACCOUNT_BASE64")
 cred_path = "firebase-admin-key.json"
-if os.path.exists(cred_path):
-    print("Connecting to Firebase Admin SDK...")
+
+if base64_cred:
+    print("Connecting to Firebase Admin SDK via Base64 Environment Variable...")
+    clean_b64 = base64_cred.strip().strip("'").strip('"')
+    cred_json = json.loads(base64.b64decode(clean_b64).decode("utf-8"))
+    cred = credentials.Certificate(cred_json)
+    admin_app = firebase_admin.initialize_app(cred)
+    
+    # If the user is using Google AI Studio, their database is not named (default).
+    database_id = os.getenv("FIREBASE_DATABASE_ID", "(default)")
+    if database_id != "(default)":
+        print(f"Connecting to named database: {database_id}")
+        
+    db = firestore.client(app=admin_app, database_id=database_id)
+    
+elif os.path.exists(cred_path):
+    print("Connecting to Firebase Admin SDK via local JSON file...")
     cred = credentials.Certificate(cred_path)
     admin_app = firebase_admin.initialize_app(cred)
     
@@ -57,9 +76,10 @@ if os.path.exists(cred_path):
         print(f"Connecting to named database: {database_id}")
         
     db = firestore.client(app=admin_app, database_id=database_id)
+    
 else:
-    print(f"\nCRITICAL WARNING: '{cred_path}' not found in the backend directory.")
-    print("You MUST place your Firebase service account JSON key here to connect your app to the database.\n")
+    print(f"\nCRITICAL WARNING: FIREBASE_SERVICE_ACCOUNT_BASE64 env var missing and '{cred_path}' not found.")
+    print("You MUST provide your Firebase service account JSON key to connect your app to the database.\n")
     db = None
 
 class MeetingProcessRequest(BaseModel):
