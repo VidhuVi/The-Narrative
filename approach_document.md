@@ -1,6 +1,13 @@
 # Solution Approach & Architecture Document
 
-## 1. Solution Design 
+## 1. Feature Adherence & Implementation
+Our solution satisfies all core requirements for the **"Meeting Intelligence Hub"**:
+* **File Ingestion:** Natively accepts both `.TXT` and `.VTT` formats.
+* **Extraction Engine:** Automatically extracts strategic **Decisions** and assigned **Action Items** (detailing *Who*, *What*, and *By When*).
+* **Workstream & Export:** Presents all extractions in a clean, comprehensive dashboard with robust **CSV Export** capabilities.
+* **Contextual Chatbot:** Supports natural language semantic search across uploaded transcripts, effectively handles speaker-specific questions, and algorithmically cites verbatim sources (meeting name and context) for every answer.
+
+## 2. Solution Design 
 Our solution, *The Narrative*, implements a **decoupled, event-driven Monorepo architecture** designed to safely handle the computational overhead of Large Language Models while preserving a highly responsive UI.
 
 Instead of running long, blocking API calls directly from the user's browser, the system employs an asynchronous event pattern:

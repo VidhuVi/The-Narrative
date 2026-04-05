@@ -47,7 +47,7 @@ npm run dev
 ```
 
 ## 🧠 Core Features
-- **Meeting Ingestion**: Upload `.txt` or `.vtt` files.
-- **Agentic Extractor**: LangGraph swarm parses out verifiable Decisions and Action Items in the background.
-- **The Workstream**: A global task manager displaying all assigned Action Items with real-time checkbox syncing to Firebase. Includes CSV export targeting any slice of the data.
-- **Contextual Global Chat**: Query multiple transcripts simultaneously. The AI is strictly prompted to cite its sources using verbatim quotes extracted directly from the transcript.
+- **Meeting Ingestion**: Upload `.txt` or `.vtt` files via a simple drag-and-drop interface.
+- **Agentic Extractor**: A LangGraph swarm parses out verifiable **Decisions** (agreements made) and **Action Items**. For every task, it specifically extracts *Who* is responsible, *What* needs to be done, and *By When* (due dates).
+- **Master Workstream**: A global task manager presenting all extracted decisions and action items in a clean, readable layout. It natively supports **CSV Export** to slice and download the data.
+- **Contextual Global Chat**: Query multiple transcripts simultaneously via natural language. The AI is engineered to reason over speaker-specific history and strictly prompt-instructed to **cite its sources**, showing precisely which meeting and transcript selection the answer originated from.
