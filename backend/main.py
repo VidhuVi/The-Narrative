@@ -1,15 +1,28 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Header
+import time
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel
 import os
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth
 from agent import process_transcript_swarm, chat_global
 from dotenv import load_dotenv
+import bleach
 
 load_dotenv()
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# HTTPS Enforcement in Production
+if os.getenv("ENVIRONMENT") == "production":
+    app.add_middleware(HTTPSRedirectMiddleware)
 
 # Restrict CORS to specific frontend domains
 allowed_origins = [
@@ -60,23 +73,41 @@ async def verify_token(authorization: str = Header(None)) -> str:
     
     token = authorization.split("Bearer ")[1]
     try:
-        # Cryptographically verify the token Signature using Firebase Admin context
-        decoded_token = firebase_auth.verify_id_token(token)
+        # Cryptographically verify the token Signature using Firebase Admin context, checking revocation
+        decoded_token = firebase_auth.verify_id_token(token, check_revoked=True)
+        # Prevent forever-active tokens by enforcing a 4 hour max lifecycle on auth_time
+        if time.time() - decoded_token.get("auth_time", 0) > 4 * 3600:
+            raise HTTPException(status_code=401, detail="Unauthorized. Token is older than 4 hours. Please refresh your session.")
         return decoded_token["uid"]
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Token verification failed: {str(e)}")
         raise HTTPException(status_code=401, detail="Unauthorized. Invalid or expired token.")
 
 @app.post("/process-meeting")
-async def process_meeting(req: MeetingProcessRequest, uid: str = Depends(verify_token)):
+@limiter.limit("5/minute")
+async def process_meeting(request: Request, req: MeetingProcessRequest, uid: str = Depends(verify_token)):
     if not db:
         raise HTTPException(status_code=500, detail="Firebase Admin key not found on server.")
         
     print(f"\n[+] Received transcript for Meeting {req.meetingId} from user {uid}. Launching Agent Swarm...")
     
+    # IDOR Check: Ensure the user actually owns the meetingId they are trying to process
+    meeting_ref = db.collection("meetings").document(req.meetingId)
+    meeting_doc = meeting_ref.get()
+    if not meeting_doc.exists:
+        raise HTTPException(status_code=404, detail="Meeting not found.")
+    m_data = meeting_doc.to_dict()
+    if m_data.get("authorId") != uid:
+        raise HTTPException(status_code=403, detail="Forbidden. You do not have ownership of this meeting.")
+
+    # Sanitize incoming payload to strip script tags or HTML execution vectors
+    safe_transcript = bleach.clean(req.transcript)
+    
     try:
         # 1. Trigger the LangGraph Multi-Agent Pipeline
-        result_state = await process_transcript_swarm(req.transcript)
+        result_state = await process_transcript_swarm(safe_transcript)
         print("\n[+] Swarm execution complete. Saving insights to Firebase...")
         
         # 2. Extract agent artifacts
@@ -91,7 +122,6 @@ async def process_meeting(req: MeetingProcessRequest, uid: str = Depends(verify_
         batch = db.batch()
         
         # Update core meeting document with the Executive Agent's summary
-        meeting_ref = db.collection("meetings").document(req.meetingId)
         batch.update(meeting_ref, {
             "status": "processed",
             "summary": exec_summary,
@@ -136,7 +166,8 @@ class ChatRequest(BaseModel):
     transcripts: list[dict] # expects [{"title": "...", "content": "..."}]
 
 @app.post("/chat-inquiry")
-async def chat_inquiry(req: ChatRequest, uid: str = Depends(verify_token)):
+@limiter.limit("20/minute")
+async def chat_inquiry(request: Request, req: ChatRequest, uid: str = Depends(verify_token)):
     print(f"\n[+] Received global text chat request from user {uid}.")
     context = ""
     for t in req.transcripts:
