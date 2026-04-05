@@ -109,7 +109,7 @@ export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ ini
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
         
         {/* Action Items Column */}
         <div className="space-y-6">
