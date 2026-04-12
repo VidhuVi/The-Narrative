@@ -9,8 +9,8 @@ The Narrative transforms raw meeting transcripts into structured, actionable int
 ## Tech Stack
 * **Programming Languages:** Python, TypeScript, HTML, CSS
 * **Frameworks:** React, Vite, FastAPI, TailwindCSS
-* **Databases:** Firebase (Firestore) for real-time document syncing
-* **APIs & Third-Party Tools:** Google Gemini Large Language Model APIs, LangGraph, Firebase Authentication
+* **Databases:** Firebase (Firestore) for real-time document syncing, **Upstash Serverless Vector DB** for RAG semantics.
+* **APIs & Third-Party Tools:** Google Gemini Large Language Model APIs, **HuggingFace Serverless Inference API**, LangGraph, Firebase Authentication
 
 ## Setup Instructions
 
@@ -19,7 +19,9 @@ Ensure you have the following installed and pre-configured before starting:
 - Node.js (v18+)
 - Python (3.11+)
 - Firebase Project (with Firestore & Auth enabled)
-- Valid Gemini API Key
+- Valid Google Gemini API Key
+- Upstash Vector Database (Configured for 384 dimensions)
+- HuggingFace Access Token (`HF_TOKEN`)
 
 ### 2. Environment Setup
 Configure your environment keys for both the frontend and backend.
@@ -33,8 +35,15 @@ VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
 VITE_FIREBASE_PROJECT_ID=your_project_id
 ```
 
-**Backend (`/backend/firebase-admin-key.json`):**
-Place your Firebase secure Admin Service Account JSON file inside the `backend/` directory and ensure it is named `firebase-admin-key.json`.
+**Backend (`/backend/.env` and Service Account):**
+Create an `.env` file in the backend directory for your LLM and Database connectors:
+```env
+GEMINI_API_KEY=your_gemini_key
+UPSTASH_VECTOR_REST_URL=your_upstash_url
+UPSTASH_VECTOR_REST_TOKEN=your_upstash_token
+HF_TOKEN=your_huggingface_access_token
+```
+Additionally, place your Firebase secure Admin Service Account JSON file inside the `backend/` directory or encode it as `FIREBASE_ADMIN_CREDENTIALS_BASE64` in your `.env`.
 
 ### 3. Install Dependencies & Run the Project Locally
 
