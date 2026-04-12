@@ -6,19 +6,14 @@ import os
 import asyncio
 from dotenv import load_dotenv
 
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores.upstash import UpstashVectorStore
 
 load_dotenv()
-load_dotenv()
 
 # We need GEMINI_API_KEY in the environment
 llm = ChatGoogleGenerativeAI(model="models/gemini-3-flash-preview", temperature=0)
-
-# Instantiate the local embedding model globally to prevent 2-5 sec re-loads on every query
-print("Agent: Loading HuggingFace Embeddings model into memory...")
-global_embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 # --- State ---
 class AgentState(TypedDict):
@@ -134,18 +129,30 @@ async def index_transcript_to_vector_db(meeting_id: str, transcript: str, author
         print("WARNING: Upstash credentials not set. Skipping vector indexing.")
         return
     
-    # We can go back to chunk size 1000 without rate limit worries
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    # Use Google Embeddings (768 dimensions)
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-2-preview")
+    
+    # We increase chunk size to reduce the total number of Google API calls per meeting
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=400)
     chunks = text_splitter.split_text(transcript)
     
     metadatas = [{"meetingId": meeting_id, "authorId": author_id, "text": chunk} for chunk in chunks]
     
     vectorstore = UpstashVectorStore(
-        embedding=global_embeddings
+        embedding=embeddings
     )
     
-    # Add chunks directly without pacing
-    vectorstore.add_texts(texts=chunks, metadatas=metadatas)
+    # Safe batching: 5 chunks at a time with a 2 second sleep to bypass the Google TPM Limit
+    batch_size = 5
+    for i in range(0, len(chunks), batch_size):
+        batch_chunks = chunks[i : i + batch_size]
+        batch_metadatas = metadatas[i : i + batch_size]
+        
+        print(f"Agent: Indexing batch {i//batch_size + 1}/{(len(chunks)-1)//batch_size + 1} to Upstash...")
+        vectorstore.add_texts(texts=batch_chunks, metadatas=batch_metadatas)
+        
+        if i + batch_size < len(chunks):
+            await asyncio.sleep(2)
 
     print("Agent: Finished indexing all vector chunks into Upstash.")
 
@@ -156,7 +163,8 @@ async def chat_global(query: str, meeting_ids: list[str], author_id: str) -> str
     if not os.getenv("UPSTASH_VECTOR_REST_URL") or not os.getenv("UPSTASH_VECTOR_REST_TOKEN"):
         return "Error: Upstash Vector Database is not configured."
 
-    vectorstore = UpstashVectorStore(embedding=global_embeddings)
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-2-preview")
+    vectorstore = UpstashVectorStore(embedding=embeddings)
     
     # Retrieve top K matches with metadata filter
     if not meeting_ids:
