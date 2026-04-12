@@ -191,7 +191,14 @@ class ChatRequest(BaseModel):
 @app.post("/chat-inquiry")
 @limiter.limit("20/minute")
 async def chat_inquiry(request: Request, req: ChatRequest, uid: str = Depends(verify_token)):
+    import re
     print(f"\n[+] Received global text chat request from user {uid}.")
+    
+    # IDOR / NoSQL Injection Prevention: Validate IDs to prevent filter bypass
+    for m_id in req.meetingIds:
+        if not re.match(r"^[a-zA-Z0-9_-]+$", m_id):
+            raise HTTPException(status_code=400, detail="Invalid Meeting ID parameter detected.")
+            
     try:
         reply = await chat_global(req.query, req.meetingIds, uid)
         return {"response": reply}
