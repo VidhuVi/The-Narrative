@@ -22,11 +22,13 @@ This design prevents browser timeouts on 20+ page transcripts and enables horizo
 * **Frontend:** React + Vite + TailwindCSS. We chose Vite for its unmatched Hot Module Replacement speed during development. Tailwind was selected to heavily enforce a "premium," design-system driven aesthetic without the bloat of traditional CSS files.
 * **Backend:** Python + FastAPI. Python is the definitive ecosystem for AI orchestration. FastAPI provides rapid, asynchronous API endpoints perfect for triggering internal LangGraph workflows.
 * **Database & Sync:** Firebase (Firestore). Chosen specifically for its Native Realtime Subscriptions. Instead of polling our database to see if the AI is finished, Firestore actively pushes the final state to the client over WebSockets.
-* **AI Engine:** Google Gemini (1.5 / 3.0 Flash). Chosen for its massive context window limit (crucial for long meeting transcripts) and rapid inference speeds.
+* **AI Engine (Hybrid Local/Cloud Stack):** 
+  * **Generative Reasoning:** Google Gemini (1.5 / 3.0 Flash) handles the massive context window logic for the Multi-Agent Swarm.
+  * **Vector Embeddings (Local):** Because this branch specifically demonstrates local embedding to save money, we run a local PyTorch `sentence-transformers` neural net directly on the web server's CPU to compute `384` dimensional vector embeddings offline before syncing with the cloud.
 
 ## 3. Improvements With More Time
 If given an additional extensive dev cycle, I would implement the following major architectural enhancements:
 
 1. **Direct Audio Processing (Whisper API):** Right now, the system relies on pre-transcribed text or `.vtt` files. Integrating a direct audio ingestion pipeline (e.g., OpenAI Whisper or Google STT) would remove friction, allowing users to drop raw `.mp3` files into the platform.
-2. **Vector Database Integration (RAG):** The current *Global Inquiry Chatbot* pushes entire transcript contents into the prompt context window. While Gemini handles large context well, as an organization scales to thousands of meetings, this will hit token limits and drastically inflate API costs. I would implement a Vector Database (like Pinecone or Milvus) to chunk and embed every transcript, allowing the chatbot to natively perform Retrieval-Augmented Generation (RAG) and only inject the top 5 most highly relevant semantic chunks.
+2. **Vector Database Integration (RAG) (IMPLEMENTED):** We implemented a robust RAG pipeline via **Upstash Serverless Vector DB**. Using offline local HuggingFace embeddings extracted via PyTorch, chunk vectors are mapped into Upstash for permanent storage. The contextual chatbot engine natively performs Retrieval-Augmented Generation (RAG) by fetching only the top highly relevant semantic chunks.
 3. **Enterprise SSO & RBAC:** Implementing rigid Role-Based Access Control and SAML SSO so that highly sensitive internal strategy meetings are only available for ingestion and querying by authorized personnel.
