@@ -80,7 +80,7 @@ async def executive_node(state: AgentState):
         f"Action Items: {state.get('action_items')}\n"
         f"Sentiment Overview: {state.get('sentiment_summary')}\n"
     )
-    res = await llm.ainvoke([{"role": "system", "content": system_prompt}])
+    res = await llm.ainvoke(system_prompt)
     
     # Gemini 3 content might return a list of rich content objects instead of a pure string
     content = res.content
