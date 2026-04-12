@@ -174,7 +174,7 @@ export const Chat: React.FC = () => {
               )}
             </AnimatePresence>
 
-            <div className="p-4 flex items-end gap-3 bg-white">
+            <div className="p-4 flex items-center gap-3 bg-white">
               <div className="flex-1">
                 <textarea
                   value={queryText}

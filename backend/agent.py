@@ -6,7 +6,7 @@ import os
 import asyncio
 from dotenv import load_dotenv
 
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores.upstash import UpstashVectorStore
 
@@ -129,11 +129,14 @@ async def index_transcript_to_vector_db(meeting_id: str, transcript: str, author
         print("WARNING: Upstash credentials not set. Skipping vector indexing.")
         return
     
-    # Use Google Embeddings (768 dimensions)
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
+    # Use HuggingFace Serverless API (384 dimensions) - Free compute on Hub!
+    embeddings = HuggingFaceEndpointEmbeddings(
+        model="sentence-transformers/all-MiniLM-L6-v2",
+        huggingfacehub_api_token=os.getenv("HF_TOKEN")
+    )
     
-    # We increase chunk size to reduce the total number of Google API calls per meeting
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=400)
+    # We reduce chunk size back to 1000 because all-MiniLM max token length is 256 (~1000 chars)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     chunks = text_splitter.split_text(transcript)
     
     metadatas = [{"meetingId": meeting_id, "authorId": author_id, "text": chunk} for chunk in chunks]
@@ -163,7 +166,10 @@ async def chat_global(query: str, meeting_ids: list[str], author_id: str) -> str
     if not os.getenv("UPSTASH_VECTOR_REST_URL") or not os.getenv("UPSTASH_VECTOR_REST_TOKEN"):
         return "Error: Upstash Vector Database is not configured."
 
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
+    embeddings = HuggingFaceEndpointEmbeddings(
+        model="sentence-transformers/all-MiniLM-L6-v2",
+        huggingfacehub_api_token=os.getenv("HF_TOKEN")
+    )
     vectorstore = UpstashVectorStore(embedding=embeddings)
     
     # Retrieve top K matches with metadata filter

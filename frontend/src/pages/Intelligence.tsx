@@ -207,7 +207,7 @@ export const Intelligence: React.FC<{ meetingId: string }> = ({ meetingId }) => 
               <ReactMarkdown>{chatResponse}</ReactMarkdown>
             </div>
           )}
-          <div className="flex items-end gap-3">
+          <div className="flex items-center gap-3">
             <div className="flex-1 relative">
               <textarea 
                 value={chatQuery}

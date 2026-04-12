@@ -9,5 +9,5 @@ slowapi==0.1.9
 bleach==6.3.0
 langchain-community
 upstash-vector
-langchain-google-genai
+langchain-huggingface
 langchain-text-splitters
