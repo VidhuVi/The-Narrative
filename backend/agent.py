@@ -130,7 +130,7 @@ async def index_transcript_to_vector_db(meeting_id: str, transcript: str, author
         return
     
     # Use Google Embeddings (768 dimensions)
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-2-preview")
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
     
     # We increase chunk size to reduce the total number of Google API calls per meeting
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=400)
@@ -163,7 +163,7 @@ async def chat_global(query: str, meeting_ids: list[str], author_id: str) -> str
     if not os.getenv("UPSTASH_VECTOR_REST_URL") or not os.getenv("UPSTASH_VECTOR_REST_TOKEN"):
         return "Error: Upstash Vector Database is not configured."
 
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-2-preview")
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
     vectorstore = UpstashVectorStore(embedding=embeddings)
     
     # Retrieve top K matches with metadata filter
