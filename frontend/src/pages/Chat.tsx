@@ -33,10 +33,10 @@ export const Chat: React.FC = () => {
 
     try {
       const contextMeetings = selectedMeetings.length > 0 ? selectedMeetings : meetings;
-      const transcriptsContext = contextMeetings.map(m => ({ title: m.title, content: m.transcriptContent }));
+      const meetingIds = contextMeetings.map(m => m.id);
 
       const token = await auth.currentUser?.getIdToken();
-      const targetUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const targetUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8001';
 
       const response = await fetch(`${targetUrl}/chat-inquiry`, {
         method: 'POST',
@@ -46,7 +46,7 @@ export const Chat: React.FC = () => {
         },
         body: JSON.stringify({
           query: userMsg,
-          transcripts: transcriptsContext
+          meetingIds: meetingIds
         })
       });
 

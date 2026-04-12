@@ -9,7 +9,7 @@ from pydantic import BaseModel
 import os
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth
-from agent import process_transcript_swarm, chat_global
+from agent import process_transcript_swarm, chat_global, index_transcript_to_vector_db
 from dotenv import load_dotenv
 import bleach
 
@@ -130,6 +130,9 @@ async def process_meeting(request: Request, req: MeetingProcessRequest, uid: str
         result_state = await process_transcript_swarm(safe_transcript)
         print("\n[+] Swarm execution complete. Saving insights to Firebase...")
         
+        # Branch out to Pinecone Indexing
+        await index_transcript_to_vector_db(req.meetingId, safe_transcript, uid)
+        
         # 2. Extract agent artifacts
         decisions = result_state.get("decisions", [])
         action_items = result_state.get("action_items", [])
@@ -183,18 +186,14 @@ async def process_meeting(request: Request, req: MeetingProcessRequest, uid: str
 
 class ChatRequest(BaseModel):
     query: str
-    transcripts: list[dict] # expects [{"title": "...", "content": "..."}]
+    meetingIds: list[str]
 
 @app.post("/chat-inquiry")
 @limiter.limit("20/minute")
 async def chat_inquiry(request: Request, req: ChatRequest, uid: str = Depends(verify_token)):
     print(f"\n[+] Received global text chat request from user {uid}.")
-    context = ""
-    for t in req.transcripts:
-        context += f"Meeting: {t.get('title')}\nContent: {t.get('content')}\n\n---\n\n"
-        
     try:
-        reply = await chat_global(req.query, context)
+        reply = await chat_global(req.query, req.meetingIds, uid)
         return {"response": reply}
     except Exception as e:
         print(f"[ERROR] Chat failure: {e}")
@@ -202,4 +201,4 @@ async def chat_inquiry(request: Request, req: ChatRequest, uid: str = Depends(ve
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)

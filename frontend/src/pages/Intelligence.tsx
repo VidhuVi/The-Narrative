@@ -29,7 +29,7 @@ export const Intelligence: React.FC<{ meetingId: string }> = ({ meetingId }) => 
     setChatLoading(true);
     try {
       const token = await auth.currentUser?.getIdToken();
-      const targetUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const targetUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8001';
       
       const response = await fetch(`${targetUrl}/chat-inquiry`, {
         method: 'POST',
@@ -39,7 +39,7 @@ export const Intelligence: React.FC<{ meetingId: string }> = ({ meetingId }) => 
         },
         body: JSON.stringify({
           query: chatQuery,
-          transcripts: [{ title: meeting.title, content: meeting.transcriptContent }]
+          meetingIds: [meeting.id]
         })
       });
 

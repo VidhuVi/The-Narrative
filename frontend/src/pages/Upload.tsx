@@ -55,7 +55,7 @@ export const Upload: React.FC = () => {
         // 2. Ping the Python LangGraph Backend Data Pipeline
         try {
           const token = await auth.currentUser.getIdToken();
-          const targetUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+          const targetUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8001';
           
           const response = await fetch(`${targetUrl}/process-meeting`, {
             method: 'POST',
@@ -75,7 +75,7 @@ export const Upload: React.FC = () => {
           }
         } catch (fetchErr) {
            console.error("Backend fetch error:", fetchErr);
-           throw new Error("Unable to reach the Python Agent backend. Is the FastAPI server running on port 8000?");
+           throw new Error("Unable to reach the Python Agent backend. Is the FastAPI server running on port 8001?");
         }
       }  
       setProgress(100);

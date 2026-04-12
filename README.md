@@ -45,7 +45,7 @@ cd backend
 python -m venv venv
 source venv/bin/activate  # Developers on Windows should use: venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn main:app --host 0.0.0.0 --port 8001 --reload
 ```
 
 #### Step 2: Run the Frontend (React UI)
