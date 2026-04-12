@@ -10,5 +10,8 @@ bleach==6.3.0
 langchain-community
 upstash-vector
 langchain-huggingface
+
+# Force CPU version of PyTorch to prevent Render from downloading 4GB of NVIDIA CUDA drivers!
+--extra-index-url https://download.pytorch.org/whl/cpu
 sentence-transformers
 langchain-text-splitters
