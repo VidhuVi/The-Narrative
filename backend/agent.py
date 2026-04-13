@@ -1,7 +1,6 @@
 from typing import Annotated, TypedDict, List
 from langgraph.graph import StateGraph, START, END
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_ollama import ChatOllama
 from pydantic import BaseModel, Field
 import os
 import asyncio
@@ -15,17 +14,8 @@ from langchain_community.vectorstores.upstash import UpstashVectorStore
 
 load_dotenv()
 
-# LLM Configuration
-USE_LOCAL = os.getenv("USE_LOCAL_LLM", "false").lower() == "true"
-
-if USE_LOCAL:
-    # Gemma 4:2b is extremely lightweight, perfect for CPU usage.
-    # We set format="json" to force structured output from the local model.
-    print("[+] Using Local LLM: Gemma-4-e2b via Ollama")
-    llm = ChatOllama(model="gemma4:e2b", temperature=0, format="json")
-else:
-    # Production: Google Gemini
-    llm = ChatGoogleGenerativeAI(model="models/gemini-3-flash-preview", temperature=0, max_retries=1, timeout=120)
+# We need GEMINI_API_KEY in the environment
+llm = ChatGoogleGenerativeAI(model="models/gemini-3-flash-preview", temperature=0, max_retries=1, timeout=120)
 
 # --- State ---
 class AgentState(TypedDict):
