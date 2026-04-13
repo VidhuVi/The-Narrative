@@ -15,7 +15,7 @@ from langchain_community.vectorstores.upstash import UpstashVectorStore
 load_dotenv()
 
 # We need GEMINI_API_KEY in the environment
-llm = ChatGoogleGenerativeAI(model="models/gemini-3-flash-preview", temperature=0, max_retries=1, timeout=120)
+llm = ChatGoogleGenerativeAI(model="models/gemini-3-flash-preview", temperature=0, max_retries=5, timeout=120)
 
 # --- State ---
 class AgentState(TypedDict):
