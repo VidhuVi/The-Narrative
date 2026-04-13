@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { db, auth } from '../core/firebase';
-import { collection, query, where, onSnapshot, orderBy, limit, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, limit, deleteDoc, doc, getDocs, writeBatch } from 'firebase/firestore';
 import { LayoutDashboard, CheckSquare, TrendingUp, ChevronRight, Video, Mic, FileText, Trash2, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion } from 'motion/react';
@@ -50,9 +50,34 @@ export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploa
     e.stopPropagation();
     if (window.confirm("Are you sure you want to permanently delete this meeting?")) {
       try {
-        await deleteDoc(doc(db, 'meetings', meetingId));
+        const cascade = localStorage.getItem('cascadeDelete') === 'true';
+        if (cascade) {
+          const batch = writeBatch(db);
+          batch.delete(doc(db, 'meetings', meetingId));
+          
+          const actionsQ = query(
+            collection(db, 'actionItems'), 
+            where('meetingId', '==', meetingId),
+            where('authorId', '==', auth.currentUser?.uid)
+          );
+          const actionsSnap = await getDocs(actionsQ);
+          actionsSnap.forEach(d => batch.delete(d.ref));
+
+          const decsQ = query(
+            collection(db, 'decisions'), 
+            where('meetingId', '==', meetingId),
+            where('authorId', '==', auth.currentUser?.uid)
+          );
+          const decsSnap = await getDocs(decsQ);
+          decsSnap.forEach(d => batch.delete(d.ref));
+          
+          await batch.commit();
+        } else {
+          await deleteDoc(doc(db, 'meetings', meetingId));
+        }
       } catch (err) {
         console.error("Failed to delete meeting", err);
+        alert("Failed to delete. Please ensure you have network connectivity.");
       }
     }
   };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../core/firebase';
-import { collection, query, where, onSnapshot, updateDoc, doc, orderBy } from 'firebase/firestore';
-import { CheckSquare, Circle, CheckCircle2, Gavel, Calendar, FileText, Filter, Download } from 'lucide-react';
+import { collection, query, where, onSnapshot, updateDoc, doc, orderBy, writeBatch } from 'firebase/firestore';
+import { CheckSquare, Circle, CheckCircle2, Gavel, Calendar, FileText, Filter, Download, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ActionItem, Decision, MeetingRef } from '../types';
 
@@ -50,22 +50,42 @@ export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ ini
   const filteredActions = filterId === 'all' ? actions : actions.filter(a => a.meetingId === filterId);
   const filteredDecisions = filterId === 'all' ? decisions : decisions.filter(d => d.meetingId === filterId);
 
+  const clearItems = async (collectionName: string, itemsToClear: { id: string }[]) => {
+    if (itemsToClear.length === 0) return;
+    const warning = filterId === 'all'
+      ? `WARNING: You are about to permanently delete ALL ${itemsToClear.length} items from your database. Proceed?`
+      : `Delete these ${itemsToClear.length} items for this meeting?`;
+
+    if (window.confirm(warning)) {
+      try {
+        const batch = writeBatch(db);
+        itemsToClear.forEach(item => {
+          batch.delete(doc(db, collectionName, item.id));
+        });
+        await batch.commit();
+      } catch (err) {
+        console.error(`Failed to clear ${collectionName}`, err);
+        alert("Failed to delete. Check your connection.");
+      }
+    }
+  };
+
   const pendingCount = filteredActions.filter(a => a.status === 'pending').length;
 
   const exportCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
     csvContent += "Type,Meeting Outline,Category/Assignee,Text/Task,Due Date,Status\n";
-    
+
     filteredDecisions.forEach(d => {
       const meetingTitle = meetings.find(m => m.id === d.meetingId)?.title || "Unknown Meeting";
       csvContent += `Decision,"${meetingTitle}","${d.category}","${d.text.replace(/"/g, '""')}",,\n`;
     });
-    
+
     filteredActions.forEach(a => {
       const meetingTitle = meetings.find(m => m.id === a.meetingId)?.title || "Unknown Meeting";
       csvContent += `Action Item,"${meetingTitle}","${a.responsible}","${a.task.replace(/"/g, '""')}","${a.dueDate || ''}","${a.status}"\n`;
     });
-    
+
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -77,7 +97,7 @@ export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ ini
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-20">
-      
+
       {/* Header and Filter */}
       <div className="flex flex-col md:flex-row justify-between md:items-end gap-6 bg-white p-6 rounded-2xl shadow-sm border border-outline-variant/10">
         <div>
@@ -86,9 +106,9 @@ export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ ini
             {pendingCount} pending task{pendingCount !== 1 ? 's' : ''} out of {filteredActions.length} total.
           </p>
         </div>
-        
+
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={exportCSV}
             className="flex items-center gap-2 px-4 py-3 bg-secondary-container text-on-secondary-container hover:bg-secondary hover:text-white transition-colors rounded-lg font-bold text-sm"
           >
@@ -96,8 +116,8 @@ export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ ini
             Export CSV
           </button>
           <Filter className="w-5 h-5 text-on-surface-variant ml-2" />
-          <select 
-            value={filterId} 
+          <select
+            value={filterId}
             onChange={(e) => setFilterId(e.target.value)}
             className="bg-surface-container-low border-none rounded-lg p-3 text-sm font-bold text-on-surface focus:ring-2 focus:ring-primary/20 outline-none min-w-[200px]"
           >
@@ -110,28 +130,39 @@ export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ ini
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-        
+
         {/* Action Items Column */}
         <div className="space-y-6">
-          <div className="flex items-center gap-3 p-4 bg-surface-container-low rounded-xl border-l-4 border-amber-500">
-            <CheckSquare className="w-6 h-6 text-amber-600" />
-            <h2 className="text-xl font-bold font-headline text-on-surface">Actionable Tasks</h2>
+          <div className="flex items-center justify-between p-4 bg-surface-container-low rounded-xl border-l-4 border-amber-500">
+            <div className="flex items-center gap-3">
+              <CheckSquare className="w-6 h-6 text-amber-600" />
+              <h2 className="text-xl font-bold font-headline text-on-surface">Actionable Tasks</h2>
+            </div>
+            {filteredActions.length > 0 && (
+              <button
+                onClick={() => clearItems('actionItems', filteredActions)}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-error bg-error/10 hover:bg-error hover:text-white transition-colors rounded shadow-sm"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+
+              </button>
+            )}
           </div>
 
           <div className="space-y-3">
             {filteredActions.length === 0 ? (
               <p className="text-sm text-on-surface-variant p-6 text-center border border-dashed rounded-xl">No tasks assigned.</p>
             ) : (
-              filteredActions.sort((a,b) => a.status === 'pending' ? -1 : 1).map(action => (
-                <motion.div 
+              filteredActions.sort((a, b) => a.status === 'pending' ? -1 : 1).map(action => (
+                <motion.div
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                  key={action.id} 
+                  key={action.id}
                   className={`p-4 bg-white rounded-xl shadow-sm border transition-all flex items-start gap-4 hover:shadow-md cursor-pointer ${action.status === 'completed' ? 'opacity-60 border-outline-variant/10' : 'border-outline-variant/30 hover:border-amber-300'}`}
                   onClick={() => toggleAction(action.id, action.status)}
                 >
                   <button className="mt-0.5 flex-shrink-0 focus:outline-none transition-transform active:scale-75">
-                    {action.status === 'completed' 
-                      ? <CheckCircle2 className="w-6 h-6 text-emerald-500" /> 
+                    {action.status === 'completed'
+                      ? <CheckCircle2 className="w-6 h-6 text-emerald-500" />
                       : <Circle className="w-6 h-6 text-slate-300 hover:text-amber-500" />}
                   </button>
                   <div className="flex-1 space-y-1">
@@ -151,9 +182,20 @@ export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ ini
 
         {/* Key Decisions Column */}
         <div className="space-y-6">
-          <div className="flex items-center gap-3 p-4 bg-primary text-white rounded-xl shadow-md">
-            <Gavel className="w-6 h-6 opacity-80" />
-            <h2 className="text-xl font-bold font-headline">Strategic Decisions</h2>
+          <div className="flex items-center justify-between p-4 bg-primary text-white rounded-xl shadow-md">
+            <div className="flex items-center gap-3">
+              <Gavel className="w-6 h-6 opacity-80" />
+              <h2 className="text-xl font-bold font-headline">Strategic Decisions</h2>
+            </div>
+            {filteredDecisions.length > 0 && (
+              <button
+                onClick={() => clearItems('decisions', filteredDecisions)}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-white/90 bg-white/20 hover:bg-error hover:text-white transition-colors rounded shadow-sm"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+
+              </button>
+            )}
           </div>
 
           <div className="space-y-3">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, Settings } from 'lucide-react';
+import { Search, Bell, Settings, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '../../core/firebase';
 import Modal from './Modal';
 
@@ -16,6 +16,58 @@ export const TopBar: React.FC<TopBarProps> = ({ title }) => {
   // State for both modals
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  
+  // Settings State
+  const [cascadeDelete, setCascadeDelete] = useState(() => {
+    return localStorage.getItem('cascadeDelete') === 'true';
+  });
+
+  const handleToggleCascade = () => {
+    const newVal = !cascadeDelete;
+    setCascadeDelete(newVal);
+    localStorage.setItem('cascadeDelete', String(newVal));
+  };
+
+  // Danger Zone State
+  const [deleteConfirmStr, setDeleteConfirmStr] = useState('');
+  const [isDeletingData, setIsDeletingData] = useState(false);
+
+  const confirmTarget = (user?.email || 'CONFIRM').trim();
+
+  const handleDeleteAllData = async () => {
+    if (!user || deleteConfirmStr.trim() !== confirmTarget) return;
+    setIsDeletingData(true);
+    
+    try {
+      const collectionsToWipe = ['meetings', 'actionItems', 'decisions'];
+      
+      for (const collName of collectionsToWipe) {
+        let hasMore = true;
+        while (hasMore) {
+          const q = query(collection(db, collName), where('authorId', '==', user.uid));
+          const snap = await getDocs(q);
+          
+          if (snap.empty) {
+            hasMore = false;
+            break;
+          }
+          
+          const batch = writeBatch(db);
+          snap.docs.forEach(docSnap => batch.delete(docSnap.ref));
+          await batch.commit();
+        }
+      }
+      
+      alert("All your generated data has been permanently deleted.");
+      setIsSettingsModalOpen(false);
+      setDeleteConfirmStr('');
+    } catch (err) {
+      console.error("Failed to delete all data:", err);
+      alert("Failed to securely delete data. Please check connection.");
+    } finally {
+      setIsDeletingData(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -92,27 +144,65 @@ export const TopBar: React.FC<TopBarProps> = ({ title }) => {
 
       {/* Settings Modal */}
       <Modal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)}>
-        <h2 className="text-xl font-bold mb-4 text-primary">Settings</h2>
+        <h2 className="text-xl font-bold mb-4 text-primary">Preferences & Settings</h2>
         <div className="text-on-surface-variant mb-6 space-y-4">
-          <p>Settings panel coming soon.</p>
-          {/* You can build out your actual settings form or toggles here later */}
-          {/* <div className="p-4 bg-surface-container-high rounded-lg border border-outline-variant/20">
-            <p className="text-sm">Future configuration options will go here.</p>
-          </div> */}
+          <div className="p-4 bg-surface-container-low rounded-xl border border-outline-variant/20 flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-6">
+              <div>
+                <h3 className="font-bold text-sm text-on-surface font-headline">Cascade Deletions</h3>
+                <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                  When enabled, deleting a meeting will also permanently delete all decisions and pending action items associated with it. When disabled, action items will persist safely.
+                </p>
+              </div>
+              <button 
+                onClick={handleToggleCascade}
+                className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${cascadeDelete ? 'bg-error' : 'bg-slate-300'}`}
+              >
+                <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all shadow-sm ${cascadeDelete ? 'left-7' : 'left-1'}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Danger Zone */}
+          <div className="mt-8 p-4 bg-error/5 rounded-xl border border-error/30 flex flex-col gap-4">
+            <div>
+              <h3 className="font-bold text-sm text-error font-headline">Danger Zone: Delete All Data</h3>
+              <p className="text-xs text-error/80 mt-1 leading-relaxed">
+                Permanently purge all your transcripts, extracted action items, and strategic decisions from the Narrative Ecosystem. This cannot be undone. Account will remain active.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-error/80 ml-1">
+                Type "{confirmTarget}" to confirm
+              </label>
+              <input 
+                type="text" 
+                value={deleteConfirmStr}
+                onChange={(e) => setDeleteConfirmStr(e.target.value)}
+                placeholder="Match string exactly..."
+                className="w-full bg-white border border-error/20 rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-error focus:border-error placeholder:text-slate-300"
+              />
+              <button 
+                onClick={handleDeleteAllData}
+                disabled={deleteConfirmStr.trim() !== confirmTarget || isDeletingData}
+                className={`mt-2 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2
+                  ${deleteConfirmStr.trim() === confirmTarget && !isDeletingData
+                    ? 'bg-error text-white hover:bg-error/90 shadow-sm shadow-error/20' 
+                    : 'bg-error/10 text-error/40 cursor-not-allowed'}`}
+              >
+                {isDeletingData ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {isDeletingData ? 'Purging Systems...' : 'Permanently Delete Data'}
+              </button>
+            </div>
+          </div>
         </div>
         <div className="flex justify-end gap-3">
           <button
             onClick={() => setIsSettingsModalOpen(false)}
-            className="px-4 py-2 text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+            className="px-4 py-2 text-primary font-bold hover:bg-surface-container-high transition-colors rounded-lg text-sm"
           >
-            Cancel
+            Close Settings
           </button>
-          {/* <button
-            onClick={() => setIsSettingsModalOpen(false)}
-            className="px-4 py-2 text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            Save Changes
-          </button> */}
         </div>
       </Modal>
     </>
