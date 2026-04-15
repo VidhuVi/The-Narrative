@@ -5,8 +5,12 @@ import { LayoutDashboard, CheckSquare, TrendingUp, ChevronRight, Video, Mic, Fil
 import { format } from 'date-fns';
 import { motion } from 'motion/react';
 import { Meeting } from '../types';
+import { useToast } from '../components/ui/Toast';
+import { useConfirm } from '../components/ui/Confirm';
 
 export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploadClick?: () => void, onViewAllActions?: () => void }> = ({ onMeetingClick, onUploadClick, onViewAllActions }) => {
+  const { success, error, info } = useToast();
+  const { confirm } = useConfirm();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [pendingActions, setPendingActions] = useState<any[]>([]);
   const [stats, setStats] = useState({ total: 0, pending: 0, sentiment: 0 });
@@ -48,7 +52,15 @@ export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploa
 
   const handleDeleteMeeting = async (e: React.MouseEvent, meetingId: string) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to permanently delete this meeting?")) {
+    
+    const confirmed = await confirm({
+      title: "Delete Meeting",
+      message: "Are you sure you want to permanently delete this meeting and its associated narrative intelligence? This action cannot be undone.",
+      confirmText: "Delete Permanently",
+      type: "danger"
+    });
+
+    if (confirmed) {
       try {
         const cascade = localStorage.getItem('cascadeDelete') === 'true';
         if (cascade) {
@@ -75,9 +87,10 @@ export const Dashboard: React.FC<{ onMeetingClick: (id: string) => void, onUploa
         } else {
           await deleteDoc(doc(db, 'meetings', meetingId));
         }
+        success("Meeting successfully removed.");
       } catch (err) {
         console.error("Failed to delete meeting", err);
-        alert("Failed to delete. Please ensure you have network connectivity.");
+        error("Secure deletion failed. Check your connection.");
       }
     }
   };

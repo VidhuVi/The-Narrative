@@ -5,8 +5,10 @@ import { BrainCircuit, Gavel, CheckCircle2, ChevronRight, Download, MessageSquar
 import { motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import { Meeting } from '../types';
+import { useToast } from '../components/ui/Toast';
 
 export const Intelligence: React.FC<{ meetingId: string }> = ({ meetingId }) => {
+  const { error } = useToast();
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [chatQuery, setChatQuery] = useState('');
   const [chatResponse, setChatResponse] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export const Intelligence: React.FC<{ meetingId: string }> = ({ meetingId }) => 
       setChatResponse(data.response);
     } catch (err) {
       console.error(err);
-      setChatResponse("Error: Could not reach Narrative Intelligence Hub backend.");
+      error("Query Failed: Could not reach Narrative Intelligence Hub backend.");
     } finally {
       setChatLoading(false);
       setChatQuery(''); // clear the input box

@@ -14,8 +14,27 @@ from langchain_community.vectorstores.upstash import UpstashVectorStore
 
 load_dotenv()
 
-# We need GEMINI_API_KEY in the environment
-llm = ChatGoogleGenerativeAI(model="models/gemini-3-flash-preview", temperature=0, max_retries=5, timeout=120)
+# LLM Configuration: Dual-Key Multiplexing for Rate Limit Optimization
+# llm_primary: Used for Analyst and Executive nodes
+# llm_secondary: Used for EQ Specialist and Chat Inquiry (uses secondary account quota)
+PRIMARY_KEY = os.getenv("GEMINI_API_KEY")
+SECONDARY_KEY = os.getenv("GEMINI_API_KEY2") or PRIMARY_KEY
+
+llm_primary = ChatGoogleGenerativeAI(
+    model="models/gemini-3-flash-preview", 
+    google_api_key=PRIMARY_KEY,
+    temperature=0, 
+    max_retries=5, 
+    timeout=120
+)
+
+llm_secondary = ChatGoogleGenerativeAI(
+    model="models/gemini-3-flash-preview", 
+    google_api_key=SECONDARY_KEY,
+    temperature=0, 
+    max_retries=5, 
+    timeout=120
+)
 
 # --- State ---
 class AgentState(TypedDict):
@@ -50,19 +69,21 @@ class SentimentOutput(BaseModel):
     segments: List[SentimentSegment] = Field(description="Detailed timeline of emotional shifts in the meeting. Pick the most important 5-10 statements.")
 
 # --- Helper for Robust JSON Extraction ---
-async def safe_invoke(node_name: str, model_schema, prompt: str):
+async def safe_invoke(node_name: str, model_schema, prompt: str, target_llm: ChatGoogleGenerativeAI):
     """
-    Tries to invoke the model. If it fails due to formatting (common in small local models), 
-    it manually extracts the JSON from the text. This logic is safe for both Cloud and Local.
+    Tries to invoke the specific model instance. If it fails due to formatting, 
+    it manually extracts the JSON from the text.
     """
+    key_val = target_llm.google_api_key.get_secret_value() if hasattr(target_llm.google_api_key, "get_secret_value") else str(target_llm.google_api_key)
+    print(f"[+] {node_name} using API Key ending in: ...{key_val[-4:] if key_val else 'NONE'}")
     try:
-        structured_llm = llm.with_structured_output(model_schema)
+        structured_llm = target_llm.with_structured_output(model_schema)
         # Try regular structured invocation
         return await structured_llm.ainvoke(prompt)
     except Exception as e:
         print(f"[!] {node_name} structured parse failed, attempting manual regex fallback: {e}")
         # Fallback: Invoke raw and cut the JSON out of the chat transcript
-        raw_res = await llm.ainvoke(prompt)
+        raw_res = await target_llm.ainvoke(prompt)
         text = raw_res.content
         if isinstance(text, list):
             text = str(text)
@@ -87,7 +108,7 @@ async def analyst_node(state: AgentState):
         f"MANDATORY: Return ONLY a raw JSON object matching the requested schema. No conversational text.\n\n"
         f"<transcript>\n{state['transcript']}\n</transcript>"
     )
-    res = await safe_invoke("Analyst", AnalystOutput, prompt)
+    res = await safe_invoke("Analyst", AnalystOutput, prompt, llm_primary)
     return {
         "decisions": [d.model_dump() for d in res.decisions],
         "action_items": [a.model_dump() for a in res.action_items]
@@ -101,7 +122,7 @@ async def eq_node(state: AgentState):
         f"MANDATORY: Return ONLY a raw JSON object matching the requested schema. No conversational text.\n\n"
         f"<transcript>\n{state['transcript']}\n</transcript>"
     )
-    res = await safe_invoke("EQ", SentimentOutput, prompt)
+    res = await safe_invoke("EQ", SentimentOutput, prompt, llm_secondary)
     return {
         "sentiment_summary": res.model_dump()
     }
@@ -117,7 +138,7 @@ async def executive_node(state: AgentState):
         f"Action Items: {state.get('action_items')}\n"
         f"Sentiment Overview: {state.get('sentiment_summary')}\n"
     )
-    res = await llm.ainvoke(system_prompt)
+    res = await llm_primary.ainvoke(system_prompt)
     
     # Gemini 3 content might return a list of rich content objects instead of a pure string
     content = res.content
@@ -235,7 +256,7 @@ Context from relevant meeting segments:
 
 Question: {query}"""
 
-    response = await llm.ainvoke(prompt)
+    response = await llm_secondary.ainvoke(prompt)
     
     # Gemini 3 content might return a list of rich content objects instead of a pure string
     content = response.content

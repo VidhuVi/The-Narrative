@@ -12,6 +12,9 @@ import { Help } from './pages/Help';
 import { LogIn, BrainCircuit, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
+import { ToastProvider } from './components/ui/Toast';
+import { ConfirmProvider } from './components/ui/Confirm';
+
 const AppContent: React.FC = () => {
   const { user, loading, login } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -102,7 +105,11 @@ const AppContent: React.FC = () => {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ToastProvider>
+        <ConfirmProvider>
+          <AppContent />
+        </ConfirmProvider>
+      </ToastProvider>
     </AuthProvider>
   );
 }

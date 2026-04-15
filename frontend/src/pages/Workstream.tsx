@@ -4,8 +4,12 @@ import { collection, query, where, onSnapshot, updateDoc, doc, orderBy, writeBat
 import { CheckSquare, Circle, CheckCircle2, Gavel, Calendar, FileText, Filter, Download, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ActionItem, Decision, MeetingRef } from '../types';
+import { useToast } from '../components/ui/Toast';
+import { useConfirm } from '../components/ui/Confirm';
 
 export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ initialMeetingId }) => {
+  const { success, error } = useToast();
+  const { confirm } = useConfirm();
   const [actions, setActions] = useState<ActionItem[]>([]);
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [meetings, setMeetings] = useState<MeetingRef[]>([]);
@@ -42,8 +46,10 @@ export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ ini
       await updateDoc(doc(db, 'actionItems', id), {
         status: currentStatus === 'pending' ? 'completed' : 'pending'
       });
+      success(`Task marked as ${currentStatus === 'pending' ? 'completed' : 'pending'}.`);
     } catch (err) {
       console.error("Failed to toggle action item", err);
+      error("Failed to update task status.");
     }
   };
 
@@ -53,19 +59,27 @@ export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ ini
   const clearItems = async (collectionName: string, itemsToClear: { id: string }[]) => {
     if (itemsToClear.length === 0) return;
     const warning = filterId === 'all'
-      ? `WARNING: You are about to permanently delete ALL ${itemsToClear.length} items from your database. Proceed?`
-      : `Delete these ${itemsToClear.length} items for this meeting?`;
+      ? `WARNING: You are about to permanently delete ALL ${itemsToClear.length} items from your database. This action is irreversible. Proceed?`
+      : `Are you sure you want to delete these ${itemsToClear.length} intelligence items for this meeting?`;
 
-    if (window.confirm(warning)) {
+    const confirmed = await confirm({
+      title: filterId === 'all' ? "Clear Global Database" : "Clear Meeting Data",
+      message: warning,
+      confirmText: "Purge Items",
+      type: "danger"
+    });
+
+    if (confirmed) {
       try {
         const batch = writeBatch(db);
         itemsToClear.forEach(item => {
           batch.delete(doc(db, collectionName, item.id));
         });
         await batch.commit();
+        success(`${itemsToClear.length} items successfully cleared.`);
       } catch (err) {
         console.error(`Failed to clear ${collectionName}`, err);
-        alert("Failed to delete. Check your connection.");
+        error("Deletion failed. Please check your network.");
       }
     }
   };

@@ -2,10 +2,16 @@ import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { CloudUpload, FileText, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { db, auth } from '../core/firebase';
+import React, { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { CloudUpload, FileText, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import { db, auth } from '../core/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
+import { useToast } from '../components/ui/Toast';
 
 export const Upload: React.FC = () => {
+  const { success, error: toastError } = useToast();
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -56,10 +62,10 @@ export const Upload: React.FC = () => {
         try {
           const token = await auth.currentUser.getIdToken();
           const targetUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8001';
-          
+
           const response = await fetch(`${targetUrl}/process-meeting`, {
             method: 'POST',
-            headers: { 
+            headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`
             },
@@ -74,16 +80,19 @@ export const Upload: React.FC = () => {
             throw new Error(errBody.detail || "Backend pipeline returned an error");
           }
         } catch (fetchErr) {
-           console.error("Backend fetch error:", fetchErr);
-           throw new Error("Unable to reach the Python Agent backend. Is the FastAPI server running on port 8001?");
+          console.error("Backend fetch error:", fetchErr);
+          throw new Error("Unable to reach the Python Agent backend. Is the FastAPI server running on port 8001?");
         }
-      }  
+      }
       setProgress(100);
       setFiles([]);
+      success("Transcript ingested. The AI Swarm is now processing in the background.");
       setTimeout(() => setUploading(false), 1000);
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : "Failed to trigger analysis pipeline. Ensure backend is running.");
+      const msg = err instanceof Error ? err.message : "Failed to trigger analysis pipeline. Ensure backend is running.";
+      setError(msg);
+      toastError(msg);
       setUploading(false);
     }
   };
@@ -92,11 +101,10 @@ export const Upload: React.FC = () => {
     <div className="max-w-6xl mx-auto space-y-10">
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-8 space-y-6">
-          <div 
+          <div
             {...getRootProps()}
-            className={`bg-surface-container-lowest rounded-xl p-12 flex flex-col items-center justify-center border-2 border-dashed transition-all cursor-pointer group ${
-              isDragActive ? 'border-primary bg-primary/5' : 'border-outline-variant/30 hover:border-primary/40'
-            }`}
+            className={`bg-surface-container-lowest rounded-xl p-12 flex flex-col items-center justify-center border-2 border-dashed transition-all cursor-pointer group ${isDragActive ? 'border-primary bg-primary/5' : 'border-outline-variant/30 hover:border-primary/40'
+              }`}
           >
             <input {...getInputProps()} />
             <div className="w-20 h-20 rounded-full bg-surface-container-low flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
@@ -116,7 +124,7 @@ export const Upload: React.FC = () => {
           </div>
 
           {files.length > 0 && !uploading && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-surface-container-low rounded-xl p-6"
@@ -126,7 +134,7 @@ export const Upload: React.FC = () => {
                   <FileText className="text-primary w-5 h-5" />
                   <span className="font-headline font-bold">Files Ready for Ingestion</span>
                 </div>
-                <button 
+                <button
                   onClick={handleUpload}
                   className="px-4 py-2 bg-primary text-white rounded-lg font-bold text-sm"
                 >
@@ -166,8 +174,8 @@ export const Upload: React.FC = () => {
                   <span className="text-sm font-bold text-primary">{progress}%</span>
                 </div>
                 <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
-                  <motion.div 
-                    className="h-full bg-primary rounded-full" 
+                  <motion.div
+                    className="h-full bg-primary rounded-full"
                     animate={{ width: `${progress}%` }}
                   />
                 </div>

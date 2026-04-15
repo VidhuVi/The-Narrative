@@ -5,7 +5,10 @@ import { MessageSquare, Send, Paperclip, BrainCircuit, Plus, X, Loader2 } from '
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import { Meeting } from '../types';
+import { useToast } from '../components/ui/Toast';
+
 export const Chat: React.FC = () => {
+  const { error } = useToast();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [selectedMeetings, setSelectedMeetings] = useState<Meeting[]>([]);
   const [queryText, setQueryText] = useState('');
@@ -58,7 +61,7 @@ export const Chat: React.FC = () => {
       setMessages(prev => [...prev, { role: 'ai', text: data.response }]);
     } catch (err) {
       console.error(err);
-      setMessages(prev => [...prev, { role: 'ai', text: "Error: Could not reach Narrative Intelligence Hub backend." }]);
+      error("Query Failed: Could not reach Narrative Intelligence Hub backend.");
     } finally {
       setLoading(false);
     }

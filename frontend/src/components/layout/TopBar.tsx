@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { collection, query, where, onSnapshot, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '../../core/firebase';
 import Modal from './Modal';
+import { useToast } from '../ui/Toast';
 
 interface TopBarProps {
   title: string;
@@ -11,6 +12,7 @@ interface TopBarProps {
 
 export const TopBar: React.FC<TopBarProps> = ({ title }) => {
   const { user, logout } = useAuth();
+  const { success, error } = useToast();
   const [processedCount, setProcessedCount] = useState(0);
 
   // State for both modals
@@ -58,12 +60,12 @@ export const TopBar: React.FC<TopBarProps> = ({ title }) => {
         }
       }
       
-      alert("All your generated data has been permanently deleted.");
+      success("Ecosystem Purge Complete: All meeting data has been permanently deleted.");
       setIsSettingsModalOpen(false);
       setDeleteConfirmStr('');
     } catch (err) {
       console.error("Failed to delete all data:", err);
-      alert("Failed to securely delete data. Please check connection.");
+      error("Purge Failed: Could not securely delete data. Please check connection.");
     } finally {
       setIsDeletingData(false);
     }
