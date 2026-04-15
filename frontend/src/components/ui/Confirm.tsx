@@ -55,7 +55,7 @@ export const ConfirmProvider: React.FC<{ children: ReactNode }> = ({ children })
               onClick={() => handleClose(false)}
               className="absolute inset-0 bg-primary/40 backdrop-blur-sm"
             />
-            
+
             {/* Modal */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -65,41 +65,39 @@ export const ConfirmProvider: React.FC<{ children: ReactNode }> = ({ children })
             >
               <div className="p-8">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-                    confirmState.options.type === 'danger' ? 'bg-error/10 text-error' : 'bg-amber-100 text-amber-600'
-                  }`}>
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${confirmState.options.type === 'danger' ? 'bg-error/10 text-error' : 'bg-amber-100 text-amber-600'
+                    }`}>
                     <AlertTriangle className="w-6 h-6" />
                   </div>
                   <h2 className="text-2xl font-black text-primary font-headline tracking-tight">
                     {confirmState.options.title}
                   </h2>
                 </div>
-                
+
                 <p className="text-on-surface-variant font-medium leading-relaxed mb-8">
                   {confirmState.options.message}
                 </p>
-                
+
                 <div className="flex gap-3">
                   <button
                     onClick={() => handleClose(false)}
-                    className="flex-1 py-3.5 px-6 rounded-xl font-bold text-sm text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors"
+                    className="flex-1 py-3.5 px-6 rounded-xl font-bold text-sm text-on-surface-variant bg-surface-container-high hover:bg-primary/10 transition-colors"
                   >
                     {confirmState.options.cancelText || 'Cancel'}
                   </button>
                   <button
                     onClick={() => handleClose(true)}
-                    className={`flex-1 py-3.5 px-6 rounded-xl font-bold text-sm text-white shadow-lg transition-all active:scale-95 ${
-                      confirmState.options.type === 'danger' 
-                        ? 'bg-error shadow-error/20 hover:bg-red-700' 
-                        : 'bg-primary shadow-primary/20 hover:opacity-90'
-                    }`}
+                    className={`flex-1 py-3.5 px-6 rounded-xl font-bold text-sm hover:bg-primary/10 text-white shadow-lg transition-all active:scale-95 ${confirmState.options.type === 'danger'
+                      ? 'bg-error shadow-error/20 hover:bg-red-700'
+                      : 'bg-primary shadow-primary/20 hover:opacity-90'
+                      }`}
                   >
                     {confirmState.options.confirmText || 'Confirm'}
                   </button>
                 </div>
               </div>
-              
-              <button 
+
+              <button
                 onClick={() => handleClose(false)}
                 className="absolute top-4 right-4 p-2 text-slate-400 hover:text-primary transition-colors opacity-0 hover:opacity-100"
               >

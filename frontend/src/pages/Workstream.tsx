@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../core/firebase';
 import { collection, query, where, onSnapshot, updateDoc, doc, orderBy, writeBatch } from 'firebase/firestore';
-import { CheckSquare, Circle, CheckCircle2, Gavel, Calendar, FileText, Filter, Download, Trash2 } from 'lucide-react';
+import { CheckSquare, Circle, CheckCircle2, Gavel, Calendar, FileText, Filter, Download, Trash2, ChevronDown } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ActionItem, Decision, MeetingRef } from '../types';
 import { useToast } from '../components/ui/Toast';
@@ -124,22 +124,25 @@ export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ ini
         <div className="flex items-center gap-3">
           <button
             onClick={exportCSV}
-            className="flex items-center gap-2 px-4 py-3 bg-secondary-container text-on-secondary-container hover:bg-secondary hover:text-white transition-colors rounded-lg font-bold text-sm"
+            className="flex items-center gap-2 px-4 py-3 bg-secondary-container text-on-secondary-container hover:bg-primary hover:text-white transition-colors rounded-lg font-bold text-sm"
           >
             <Download className="w-4 h-4" />
             Export CSV
           </button>
           <Filter className="w-5 h-5 text-on-surface-variant ml-2" />
-          <select
-            value={filterId}
-            onChange={(e) => setFilterId(e.target.value)}
-            className="bg-surface-container-low border-none rounded-lg p-3 text-sm font-bold text-on-surface focus:ring-2 focus:ring-primary/20 outline-none min-w-[200px]"
-          >
-            <option value="all">Every Meeting</option>
-            {meetings.map(m => (
-              <option key={m.id} value={m.id}>{m.title}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={filterId}
+              onChange={(e) => setFilterId(e.target.value)}
+              className="appearance-none cursor-pointer bg-secondary-container text-on-secondary-container hover:bg-primary hover:text-white transition-colors rounded-lg pl-4 pr-10 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/30 min-w-[200px]"
+            >
+              <option value="all">Every Meeting</option>
+              {meetings.map(m => (
+                <option key={m.id} value={m.id}>{m.title}</option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-secondary-container" />
+          </div>
         </div>
       </div>
 

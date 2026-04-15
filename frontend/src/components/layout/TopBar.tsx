@@ -18,7 +18,7 @@ export const TopBar: React.FC<TopBarProps> = ({ title }) => {
   // State for both modals
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  
+
   // Settings State
   const [cascadeDelete, setCascadeDelete] = useState(() => {
     return localStorage.getItem('cascadeDelete') === 'true';
@@ -39,27 +39,27 @@ export const TopBar: React.FC<TopBarProps> = ({ title }) => {
   const handleDeleteAllData = async () => {
     if (!user || deleteConfirmStr.trim() !== confirmTarget) return;
     setIsDeletingData(true);
-    
+
     try {
       const collectionsToWipe = ['meetings', 'actionItems', 'decisions'];
-      
+
       for (const collName of collectionsToWipe) {
         let hasMore = true;
         while (hasMore) {
           const q = query(collection(db, collName), where('authorId', '==', user.uid));
           const snap = await getDocs(q);
-          
+
           if (snap.empty) {
             hasMore = false;
             break;
           }
-          
+
           const batch = writeBatch(db);
           snap.docs.forEach(docSnap => batch.delete(docSnap.ref));
           await batch.commit();
         }
       }
-      
+
       success("Ecosystem Purge Complete: All meeting data has been permanently deleted.");
       setIsSettingsModalOpen(false);
       setDeleteConfirmStr('');
@@ -156,7 +156,7 @@ export const TopBar: React.FC<TopBarProps> = ({ title }) => {
                   When enabled, deleting a meeting will also permanently delete all decisions and pending action items associated with it. When disabled, action items will persist safely.
                 </p>
               </div>
-              <button 
+              <button
                 onClick={handleToggleCascade}
                 className={`w-12 h-6 rounded-full transition-colors relative flex-shrink-0 ${cascadeDelete ? 'bg-error' : 'bg-slate-300'}`}
               >
@@ -177,19 +177,19 @@ export const TopBar: React.FC<TopBarProps> = ({ title }) => {
               <label className="text-[10px] font-bold uppercase tracking-widest text-error/80 ml-1">
                 Type "{confirmTarget}" to confirm
               </label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={deleteConfirmStr}
                 onChange={(e) => setDeleteConfirmStr(e.target.value)}
                 placeholder="Match string exactly..."
                 className="w-full bg-white border border-error/20 rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-error focus:border-error placeholder:text-slate-300"
               />
-              <button 
+              <button
                 onClick={handleDeleteAllData}
                 disabled={deleteConfirmStr.trim() !== confirmTarget || isDeletingData}
                 className={`mt-2 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2
                   ${deleteConfirmStr.trim() === confirmTarget && !isDeletingData
-                    ? 'bg-error text-white hover:bg-error/90 shadow-sm shadow-error/20' 
+                    ? 'bg-error text-white hover:bg-error/90 shadow-sm shadow-error/20'
                     : 'bg-error/10 text-error/40 cursor-not-allowed'}`}
               >
                 {isDeletingData ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -201,7 +201,7 @@ export const TopBar: React.FC<TopBarProps> = ({ title }) => {
         <div className="flex justify-end gap-3">
           <button
             onClick={() => setIsSettingsModalOpen(false)}
-            className="px-4 py-2 text-primary font-bold hover:bg-surface-container-high transition-colors rounded-lg text-sm"
+            className="px-4 py-2 text-primary font-bold hover:bg-primary/10 transition-colors rounded-lg text-sm"
           >
             Close Settings
           </button>
