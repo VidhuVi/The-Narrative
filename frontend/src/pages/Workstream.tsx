@@ -46,7 +46,7 @@ export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ ini
       await updateDoc(doc(db, 'actionItems', id), {
         status: currentStatus === 'pending' ? 'completed' : 'pending'
       });
-      success(`Task marked as ${currentStatus === 'pending' ? 'completed' : 'pending'}.`);
+      success(currentStatus === 'pending' ? 'Task completed! ✓' : 'Task reopened.');
     } catch (err) {
       console.error("Failed to toggle action item", err);
       error("Failed to update task status.");
@@ -58,14 +58,14 @@ export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ ini
 
   const clearItems = async (collectionName: string, itemsToClear: { id: string }[]) => {
     if (itemsToClear.length === 0) return;
-    const warning = filterId === 'all'
-      ? `WARNING: You are about to permanently delete ALL ${itemsToClear.length} items from your database. This action is irreversible. Proceed?`
-      : `Are you sure you want to delete these ${itemsToClear.length} intelligence items for this meeting?`;
+
+    const itemType = collectionName === 'actionItems' ? 'action items' : 'decisions';
+    const scopeLabel = filterId === 'all' ? 'across all meetings' : 'for this meeting';
 
     const confirmed = await confirm({
-      title: filterId === 'all' ? "Clear Global Database" : "Clear Meeting Data",
-      message: warning,
-      confirmText: "Purge Items",
+      title: filterId === 'all' ? `Clear All ${itemType === 'action items' ? 'Tasks' : 'Decisions'}` : `Clear Meeting ${itemType === 'action items' ? 'Tasks' : 'Decisions'}`,
+      message: `You are about to permanently remove ${itemsToClear.length} ${itemType} ${scopeLabel}. This cannot be undone.`,
+      confirmText: `Delete ${itemsToClear.length} ${itemType === 'action items' ? 'Tasks' : 'Decisions'}`,
       type: "danger"
     });
 
@@ -76,7 +76,7 @@ export const Workstream: React.FC<{ initialMeetingId?: string | null }> = ({ ini
           batch.delete(doc(db, collectionName, item.id));
         });
         await batch.commit();
-        success(`${itemsToClear.length} items successfully cleared.`);
+        success(`${itemsToClear.length} ${itemType} permanently removed.`);
       } catch (err) {
         console.error(`Failed to clear ${collectionName}`, err);
         error("Deletion failed. Please check your network.");
